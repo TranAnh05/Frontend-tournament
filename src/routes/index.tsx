@@ -4,8 +4,14 @@ import ProtectedRoute from './ProtectedRoute';
 import LoginPage from '@/features/auth/pages/LoginPage';
 import RegisterPage from '@/features/auth/pages/RegisterPage';
 import TournamentListPage from '@/features/tournaments/pages/ORGANIZER/TournamentListPage';
+import AdminLayout from '@/features/admin/layouts/AdminLayout';
+import SportsManagementPage from '@/features/admin/pages/SportsManagementPage';
 
 const AdminDashboard = () => <div className="p-10"><h1>Dashboard Admin</h1></div>;
+const BanToChuc = () => <div className="p-10"><h1>Ban To Chuc</h1></div>;
+const DiaDiemSan = () => <div className="p-10"><h1>Dia Diem San</h1></div>;
+const KiLuat = () => <div className="p-10"><h1>Ky Luat</h1></div>;
+const CauHinh = () => <div className="p-10"><h1>Cau Hinh</h1></div>;
 const OrganizerDashboard = () => <div className="p-10"><h1>Dashboard Ban Tổ Chức</h1></div>;
 const ClubDashboard = () => <div className="p-10"><h1>Dashboard Câu Lạc Bộ</h1></div>;
 const RefereeDashboard = () => <div className="p-10"><h1>Dashboard Trọng Tài</h1></div>;
@@ -32,8 +38,36 @@ export const router = createBrowserRouter([
   {
     element: <ProtectedRoute allowedRoles={['ROLE_ADMIN']} />,
     children: [
-      { path: '/admin', element: <AdminDashboard /> },
-      // Thêm các trang con của Admin ở đây: /admin/users, /admin/settings...
+      { 
+        path: '/admin',
+        element: <AdminLayout />,
+        children: [
+          {
+            index: true,
+            element: <AdminDashboard />
+          },
+          {
+            path: 'sports',
+            element: <SportsManagementPage />
+          },
+          {
+            path: 'organizers',
+            element: <BanToChuc />
+          },
+          {
+            path: 'venues',
+            element: <DiaDiemSan />
+          },
+          {
+            path: 'disciplines',
+            element: <KiLuat />
+          },
+          {
+            path: 'settings',
+            element: <CauHinh />
+          }
+        ]
+      },
     ],
   },
 
@@ -47,7 +81,7 @@ export const router = createBrowserRouter([
 
   // Dành riêng cho Câu lạc bộ (Club)
   {
-    element: <ProtectedRoute allowedRoles={['ROLE_CLUB']} />,
+    element: <ProtectedRoute allowedRoles={['ROLE_CLUB_MANAGER']} />,
     children: [
       { path: '/club', element: <ClubDashboard /> },
     ],

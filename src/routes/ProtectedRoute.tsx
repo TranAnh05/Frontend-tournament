@@ -13,9 +13,14 @@ const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
         return <Navigate to="/login" replace />;
     }
 
-    const hasRequiredRole = user.roles.some((userRole) =>
-        allowedRoles.includes(userRole as Role),
+    const hasRequiredRole = user.roles.some((userRole) => 
+        allowedRoles.includes(userRole as Role)
     );
+
+    console.log(allowedRoles);
+    console.log(user.roles);
+    console.log(hasRequiredRole);
+    
 
     if (!hasRequiredRole) {
         return <Navigate to="/unauthorized" replace />;
