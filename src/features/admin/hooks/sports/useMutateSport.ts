@@ -4,11 +4,13 @@ import { sportsApi } from "../../api/sportsApi";
 import {
     type SportCreateRequest,
     type SportUpdateRequest,
+    type StatusUpdateRequest,
 } from "../../types/sports";
 
 export const useMutateSport = () => {
     const [isCreating, setIsCreating] = useState<boolean>(false);
     const [isUpdating, setIsUpdating] = useState<boolean>(false);
+    const [isChangingStatus, setIsChangingStatus] = useState<boolean>(false);
 
     const createSport = async (
         data: SportCreateRequest,
@@ -57,6 +59,27 @@ export const useMutateSport = () => {
         }
     };
 
+    const toggleSportStatus = async (
+        id: number,
+        data: StatusUpdateRequest,
+        onSuccess?: () => void,
+    ) => {
+        setIsChangingStatus(true);
+        try {
+            const response = await sportsApi.updateStatus(id, data);
+            toast.success(
+                response.message || "Thay đổi trạng thái thành công!",
+            );
+            onSuccess?.();
+            return response.result;
+        } catch (error) {
+            console.error("Toggle status error:", error);
+            throw error;
+        } finally {
+            setIsChangingStatus(false);
+        }
+    };
+
     // Cờ gộp chung giúp UI Form dễ dàng quản lý trạng thái disabled/loading của nút Save
     const isSubmitting = isCreating || isUpdating;
 
@@ -66,5 +89,7 @@ export const useMutateSport = () => {
         isCreating,
         isUpdating,
         isSubmitting,
+        toggleSportStatus,
+        isChangingStatus
     };
 };

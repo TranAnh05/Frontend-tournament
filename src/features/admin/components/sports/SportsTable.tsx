@@ -6,6 +6,8 @@ import {
     ChevronUp,
     AlertCircle,
     SearchX,
+    ToggleLeft,
+    ToggleRight,
 } from "lucide-react";
 import { type SportResponse } from "../../types/sports";
 import { cn } from "@/utils/classNames";
@@ -14,14 +16,16 @@ interface SportsTableProps {
     sports: SportResponse[];
     isLoading: boolean;
     isFiltered?: boolean;
-    onEdit: (sport: SportResponse) => void; 
+    onEdit: (sport: SportResponse) => void;
+    onToggleStatus: (sport: SportResponse) => void;
 }
 
 export const SportsTable: React.FC<SportsTableProps> = ({
     sports,
     isLoading,
     isFiltered = false,
-    onEdit
+    onEdit,
+    onToggleStatus,
 }) => {
     const [expandedRowId, setExpandedRowId] = useState<number | null>(null);
 
@@ -127,18 +131,38 @@ export const SportsTable: React.FC<SportsTableProps> = ({
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <span
-                                                className={cn(
-                                                    "inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-medium",
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onToggleStatus(sport);
+                                                }}
+                                                className="group flex items-center justify-center w-full focus:outline-none"
+                                                title={
                                                     sport.status === "ACTIVE"
-                                                        ? "bg-green-100 text-green-700"
-                                                        : "bg-red-100 text-red-700",
-                                                )}
+                                                        ? "Click để vô hiệu hóa"
+                                                        : "Click để kích hoạt"
+                                                }
                                             >
-                                                {sport.status === "ACTIVE"
-                                                    ? "Đang hoạt động"
-                                                    : "Đã khóa"}
-                                            </span>
+                                                <div
+                                                    className={cn(
+                                                        "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out",
+                                                        sport.status ===
+                                                            "ACTIVE"
+                                                            ? "bg-green-500"
+                                                            : "bg-gray-300",
+                                                    )}
+                                                >
+                                                    <span
+                                                        className={cn(
+                                                            "inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out",
+                                                            sport.status ===
+                                                                "ACTIVE"
+                                                                ? "translate-x-6"
+                                                                : "translate-x-1",
+                                                        )}
+                                                    />
+                                                </div>
+                                            </button>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div
@@ -162,8 +186,8 @@ export const SportsTable: React.FC<SportsTableProps> = ({
                                                     className="p-1.5 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-md transition-colors"
                                                     title="Chỉnh sửa"
                                                     onClick={(e) => {
-                                                        e.stopPropagation()
-                                                        onEdit(sport)
+                                                        e.stopPropagation();
+                                                        onEdit(sport);
                                                     }}
                                                 >
                                                     <Edit size={18} />
