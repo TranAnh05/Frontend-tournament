@@ -38,3 +38,7 @@ export interface SportUpdateRequest {
   description?: string;
   rules: RuleRequest[];
 }
+
+export interface StatusUpdateRequest {
+  status: 'ACTIVE' | 'INACTIVE';
+}

@@ -5,6 +5,7 @@ import {
     type SportFilterParams,
     type SportResponse,
     type SportUpdateRequest,
+    type StatusUpdateRequest,
 } from "../types/sports";
 import type { PageResponse } from "../types/Pagination";
 
@@ -24,5 +25,12 @@ export const sportsApi = {
         data: SportUpdateRequest,
     ): Promise<ApiResponse<SportResponse>> => {
         return api.put(`/admin/sports/${id}`, data);
+    },
+
+    updateStatus: (
+        id: number,
+        data: StatusUpdateRequest,
+    ): Promise<ApiResponse<SportResponse>> => {
+        return api.patch(`/admin/sports/${id}/status`, data);
     },
 };
