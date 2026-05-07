@@ -6,9 +6,13 @@ import { SportsDrawer } from "../components/sports/SportsDrawer";
 import { useGetSports } from "../hooks/sports/useGetSports";
 import { Input } from "@/components/ui/Input";
 import { Pagination } from "../components/Pagination";
+import type { SportResponse } from "../types/sports";
 
 export const SportsManagementPage = () => {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [editingSport, setEditingSport] = useState<SportResponse | null>(
+        null,
+    );
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [status, setStatus] = useState("");
@@ -39,6 +43,16 @@ export const SportsManagementPage = () => {
 
     const isFiltered = Boolean(debouncedSearch || status);
 
+    const handleOpenCreateMode = () => {
+        setEditingSport(null);
+        setIsDrawerOpen(true);
+    };
+
+    const handleOpenEditMode = (sport: SportResponse) => {
+        setEditingSport(sport); // Nạp dữ liệu vào state
+        setIsDrawerOpen(true);
+    };
+
     return (
         <div className="space-y-6">
             {/* --- PAGE HEADER --- */}
@@ -54,7 +68,7 @@ export const SportsManagementPage = () => {
                 </div>
                 <Button
                     variant="primary"
-                    onClick={() => setIsDrawerOpen(true)}
+                    onClick={handleOpenCreateMode}
                     className="shrink-0"
                 >
                     <Plus size={18} className="mr-2" />
@@ -94,7 +108,12 @@ export const SportsManagementPage = () => {
             </div>
 
             {/* --- DATA TABLE --- */}
-            <SportsTable sports={data.content} isLoading={isLoading} isFiltered={isFiltered} />
+            <SportsTable
+                sports={data.content}
+                isLoading={isLoading}
+                isFiltered={isFiltered}
+                onEdit={handleOpenEditMode}
+            />
 
             {/* PHÂN TRANG  */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 mt-4">
@@ -121,6 +140,7 @@ export const SportsManagementPage = () => {
             {/* --- DRAWER --- */}
             <SportsDrawer
                 isOpen={isDrawerOpen}
+                sportData={editingSport}
                 onClose={() => setIsDrawerOpen(false)}
                 onSuccess={() => {
                     setPage(0);

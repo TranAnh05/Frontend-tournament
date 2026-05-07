@@ -14,12 +14,14 @@ interface SportsTableProps {
     sports: SportResponse[];
     isLoading: boolean;
     isFiltered?: boolean;
+    onEdit: (sport: SportResponse) => void; 
 }
 
 export const SportsTable: React.FC<SportsTableProps> = ({
     sports,
     isLoading,
     isFiltered = false,
+    onEdit
 }) => {
     const [expandedRowId, setExpandedRowId] = useState<number | null>(null);
 
@@ -159,6 +161,10 @@ export const SportsTable: React.FC<SportsTableProps> = ({
                                                 <button
                                                     className="p-1.5 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-md transition-colors"
                                                     title="Chỉnh sửa"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        onEdit(sport)
+                                                    }}
                                                 >
                                                     <Edit size={18} />
                                                 </button>

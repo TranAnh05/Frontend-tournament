@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const ruleSchema = z.object({
+  id: z.number().optional(), 
   ruleKey: z
     .string()
     .min(1, 'Mã quy tắc không được để trống')
@@ -9,10 +10,10 @@ export const ruleSchema = z.object({
   description: z.string().optional(),
 });
 
-export const sportCreateSchema = z.object({
+export const sportFormSchema = z.object({
   name: z.string().min(1, 'Tên môn thể thao không được để trống'),
   description: z.string().optional(),
   rules: z.array(ruleSchema), 
 });
 
-export type SportCreateFormValues = z.infer<typeof sportCreateSchema>;
+export type SportFormValues = z.infer<typeof sportFormSchema>;
