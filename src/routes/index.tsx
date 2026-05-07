@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import LoginPage from '@/features/auth/pages/LoginPage';
 import RegisterPage from '@/features/auth/pages/RegisterPage';
+import TournamentListPage from '@/features/tournaments/pages/ORGANIZER/TournamentListPage';
 import AdminLayout from '@/features/admin/layouts/AdminLayout';
 import SportsManagementPage from '@/features/admin/pages/SportsManagementPage';
 
@@ -74,7 +75,7 @@ export const router = createBrowserRouter([
   {
     element: <ProtectedRoute allowedRoles={['ROLE_ORGANIZER']} />,
     children: [
-      { path: '/organizer', element: <OrganizerDashboard /> },
+      { path: '/organizer', element: <TournamentListPage /> },
     ],
   },
 
