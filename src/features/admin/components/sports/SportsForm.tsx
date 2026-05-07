@@ -34,7 +34,7 @@ export const SportsForm: React.FC<SportsFormProps> = ({
         defaultValues: {
             name: "",
             description: "",
-            rules: [],
+            rules: [{ ruleKey: '', ruleValue: '', description: '' }],
         },
         mode: "onChange",
     });
@@ -63,7 +63,7 @@ export const SportsForm: React.FC<SportsFormProps> = ({
             reset({
                 name: "",
                 description: "",
-                rules: [],
+                rules: [{ ruleKey: '', ruleValue: '', description: '' }],
             });
         }
     }, [initialData, reset]);
