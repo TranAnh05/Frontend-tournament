@@ -3,6 +3,11 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import LoginPage from '@/features/auth/pages/LoginPage';
 import RegisterPage from '@/features/auth/pages/RegisterPage';
+import ClubProfilePage from '@/features/club/pages/ClubProfilePage';
+import DashboardLayout from '@/features/club/DashboardLayout';
+import MembersPage from '@/features/club/pages/Memberspage';
+import MatchesPage from '@/features/club/pages/Matchespage ';
+
 
 const AdminDashboard = () => <div className="p-10"><h1>Dashboard Admin</h1></div>;
 const OrganizerDashboard = () => <div className="p-10"><h1>Dashboard Ban Tổ Chức</h1></div>;
@@ -45,13 +50,18 @@ export const router = createBrowserRouter([
   },
 
   // Dành riêng cho Câu lạc bộ (Club)
-  {
-    element: <ProtectedRoute allowedRoles={['ROLE_CLUB']} />,
-    children: [
-      { path: '/club', element: <ClubDashboard /> },
-    ],
+ {
+    element: <ProtectedRoute allowedRoles={['ROLE_CLUB_MANAGER']} />,
+    children: [{
+      element: <DashboardLayout />,
+      children: [
+        { path: '/club', element: <ClubProfilePage /> },
+        { path: '/club/members', element: <MembersPage /> },
+        { path: '/club/matches', element: <MatchesPage /> },
+        // { path: '/club/tournaments', element: <ComingSoon title="Giải đấu" /> },
+      ],
+    }],
   },
-
   // Dành riêng cho Trọng tài (Referee)
   {
     element: <ProtectedRoute allowedRoles={['ROLE_REFEREE']} />,
