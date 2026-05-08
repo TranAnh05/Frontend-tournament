@@ -171,8 +171,8 @@ export const VenuesManagementPage = () => {
                 }
                 title={
                     confirmModal.venue?.status === "ACTIVE"
-                        ? "Vô hiệu hóa địa điểm?"
-                        : "Kích hoạt địa điểm?"
+                        ? "Khóa địa điểm thi đấu?"
+                        : "Mở khóa địa điểm?"
                 }
                 message={
                     confirmModal.venue?.status === "ACTIVE"
@@ -181,8 +181,8 @@ export const VenuesManagementPage = () => {
                 }
                 confirmLabel={
                     confirmModal.venue?.status === "ACTIVE"
-                        ? "Vô hiệu hóa"
-                        : "Kích hoạt"
+                        ? "Khóa địa điểm"
+                        : "Mở khóa"
                 }
                 isLoading={isChangingStatus}
                 onConfirm={handleConfirmToggle}
