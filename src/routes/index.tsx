@@ -6,6 +6,11 @@ import RegisterPage from "@/features/auth/pages/RegisterPage";
 import AdminLayout from "@/features/admin/layouts/AdminLayout";
 import SportsManagementPage from "@/features/admin/pages/SportsManagementPage";
 import VenuesManagementPage from "@/features/admin/pages/VenuesManagementPage";
+import ClubProfilePage from '@/features/club/pages/ClubProfilePage';
+import DashboardLayout from '@/features/club/DashboardLayout';
+import MembersPage from '@/features/club/pages/Memberspage';
+import MatchesPage from '@/features/club/pages/Matchespage ';
+import TournamentsPage from '@/features/club/pages/Tournamentspage';
 
 const AdminDashboard = () => (
     <div className="p-10">
@@ -127,6 +132,32 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute allowedRoles={["ROLE_REFEREE"]} />,
         children: [{ path: "/referee", element: <RefereeDashboard /> }],
     },
+        
+         {
+    element: <ProtectedRoute allowedRoles={['ROLE_ORGANIZER']} />,
+    children: [
+      { path: '/organizer', element: <TournamentListPage /> },
+    ],
+  },
+ {
+    element: <ProtectedRoute allowedRoles={['ROLE_CLUB_MANAGER']} />,
+    children: [{
+      element: <DashboardLayout />,
+      children: [
+        { path: '/club', element: <ClubProfilePage /> },
+        { path: '/club/members', element: <MembersPage /> },
+        { path: '/club/matches', element: <MatchesPage /> },
+         { path: '/club/tournaments', element: <TournamentsPage /> },
+      ],
+    }],
+  },
+  // Dành riêng cho Trọng tài (Referee)
+  {
+    element: <ProtectedRoute allowedRoles={['ROLE_REFEREE']} />,
+    children: [
+      { path: '/referee', element: <RefereeDashboard /> },
+    ],
+  },
 
     // Dành riêng cho Vận động viên (Athlete)
     {
