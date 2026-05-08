@@ -1,4 +1,5 @@
 export interface RuleRequest {
+  id?: number;
   ruleKey: string;
   ruleValue: string;
   description?: string;
@@ -30,4 +31,14 @@ export interface SportFilterParams {
   status?: string;
   page?: number;
   size?: number;
+}
+
+export interface SportUpdateRequest {
+  name: string;
+  description?: string;
+  rules: RuleRequest[];
+}
+
+export interface StatusUpdateRequest {
+  status: 'ACTIVE' | 'INACTIVE';
 }

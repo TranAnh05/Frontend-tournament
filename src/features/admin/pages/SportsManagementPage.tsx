@@ -6,9 +6,15 @@ import { SportsDrawer } from "../components/sports/SportsDrawer";
 import { useGetSports } from "../hooks/sports/useGetSports";
 import { Input } from "@/components/ui/Input";
 import { Pagination } from "../components/Pagination";
+import type { SportResponse } from "../types/sports";
+import { useMutateSport } from "../hooks/sports/useMutateSport";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 
 export const SportsManagementPage = () => {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [editingSport, setEditingSport] = useState<SportResponse | null>(
+        null,
+    );
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [status, setStatus] = useState("");
@@ -16,6 +22,16 @@ export const SportsManagementPage = () => {
     const [size] = useState(5);
 
     const { data, isLoading, fetchSports } = useGetSports();
+    const { toggleSportStatus, isChangingStatus } = useMutateSport();
+
+    // State quản lý Modal xác nhận
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        sport: SportResponse | null;
+    }>({
+        isOpen: false,
+        sport: null,
+    });
 
     // Debounce cho ô tìm kiếm
     useEffect(() => {
@@ -39,6 +55,47 @@ export const SportsManagementPage = () => {
 
     const isFiltered = Boolean(debouncedSearch || status);
 
+    const handleOpenCreateMode = () => {
+        setEditingSport(null);
+        setIsDrawerOpen(true);
+    };
+
+    const handleOpenEditMode = (sport: SportResponse) => {
+        setEditingSport(sport); // Nạp dữ liệu vào state
+        setIsDrawerOpen(true);
+    };
+
+    // Khi người dùng click gạt công tắc
+    const handleRequestToggle = (sport: SportResponse) => {
+        setConfirmModal({
+            isOpen: true,
+            sport: sport,
+        });
+    };
+
+    // Khi người dùng nhấn "Xác nhận" trên Modal
+    const handleConfirmToggle = async () => {
+        const { sport } = confirmModal;
+        if (!sport) return;
+
+        const newStatus = sport.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+
+        try {
+            await toggleSportStatus(sport.id, { status: newStatus }, () => {
+                // Đóng modal và refresh dữ liệu
+                setConfirmModal({ isOpen: false, sport: null });
+                fetchSports({
+                    search: debouncedSearch,
+                    status: status || undefined,
+                    page,
+                    size,
+                });
+            });
+        } catch (error) {
+            console.error("Failed to toggle status", error);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* --- PAGE HEADER --- */}
@@ -54,7 +111,7 @@ export const SportsManagementPage = () => {
                 </div>
                 <Button
                     variant="primary"
-                    onClick={() => setIsDrawerOpen(true)}
+                    onClick={handleOpenCreateMode}
                     className="shrink-0"
                 >
                     <Plus size={18} className="mr-2" />
@@ -94,7 +151,13 @@ export const SportsManagementPage = () => {
             </div>
 
             {/* --- DATA TABLE --- */}
-            <SportsTable sports={data.content} isLoading={isLoading} isFiltered={isFiltered} />
+            <SportsTable
+                sports={data.content}
+                isLoading={isLoading}
+                isFiltered={isFiltered}
+                onEdit={handleOpenEditMode}
+                onToggleStatus={handleRequestToggle}
+            />
 
             {/* PHÂN TRANG  */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 mt-4">
@@ -121,6 +184,7 @@ export const SportsManagementPage = () => {
             {/* --- DRAWER --- */}
             <SportsDrawer
                 isOpen={isDrawerOpen}
+                sportData={editingSport}
                 onClose={() => setIsDrawerOpen(false)}
                 onSuccess={() => {
                     setPage(0);
@@ -131,6 +195,32 @@ export const SportsManagementPage = () => {
                         size,
                     });
                 }}
+            />
+
+            {/* --- CONFIRM DIALOG --- */}
+            <ConfirmDialog
+                isOpen={confirmModal.isOpen}
+                type={
+                    confirmModal.sport?.status === "ACTIVE" ? "danger" : "info"
+                }
+                title={
+                    confirmModal.sport?.status === "ACTIVE"
+                        ? "Vô hiệu hóa môn thi đấu?"
+                        : "Kích hoạt môn thi đấu?"
+                }
+                message={
+                    confirmModal.sport?.status === "ACTIVE"
+                        ? `Bạn có chắc chắn muốn ngừng hoạt động môn "${confirmModal.sport.name}"? Các giải đấu mới sẽ không thể chọn môn này.`
+                        : `Bạn có muốn kích hoạt lại môn "${confirmModal.sport?.name}" để sử dụng cho các giải đấu sắp tới?`
+                }
+                confirmLabel={
+                    confirmModal.sport?.status === "ACTIVE"
+                        ? "Vô hiệu hóa"
+                        : "Kích hoạt ngay"
+                }
+                isLoading={isChangingStatus}
+                onConfirm={handleConfirmToggle}
+                onCancel={() => setConfirmModal({ isOpen: false, sport: null })}
             />
         </div>
     );
