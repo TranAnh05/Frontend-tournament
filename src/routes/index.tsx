@@ -6,6 +6,7 @@ import RegisterPage from '@/features/auth/pages/RegisterPage';
 import TournamentListPage from '@/features/tournaments/pages/ORGANIZER/TournamentListPage';
 import AdminLayout from '@/features/admin/layouts/AdminLayout';
 import SportsManagementPage from '@/features/admin/pages/SportsManagementPage';
+import TournamentDetailPage from '@/features/tournaments/pages/ORGANIZER/TournamentDetailPage';
 
 const AdminDashboard = () => <div className="p-10"><h1>Dashboard Admin</h1></div>;
 const BanToChuc = () => <div className="p-10"><h1>Ban To Chuc</h1></div>;
@@ -76,6 +77,7 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute allowedRoles={['ROLE_ORGANIZER']} />,
     children: [
       { path: '/organizer', element: <TournamentListPage /> },
+      { path: "/organizer/tournaments/:id",element:<TournamentDetailPage /> }
     ],
   },
 

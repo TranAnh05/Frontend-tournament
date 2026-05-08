@@ -1,5 +1,6 @@
 import { Table, Space, Button } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import  type { Tournament , TournamentStatus } from '../types';
 import StatusTag from './StatusTag'; // Component con xử lý màu sắc status
 
@@ -10,6 +11,7 @@ interface Props {
   onChange: (pagination: any) => void;
 }
 const TournamentTable = ({ data, loading, pagination, onChange}: Props) => {
+  const navigate = useNavigate();
   const columns = [
     { title: 'ID', dataIndex: 'id', key: 'id', render: (id: number) => `#${id}` },
     { title: 'TÊN GIẢI ĐẤU', dataIndex: 'name', key: 'name', className: 'font-semibold' },
@@ -28,9 +30,13 @@ const TournamentTable = ({ data, loading, pagination, onChange}: Props) => {
     {
       title: 'THAO TÁC',
       key: 'action',
-      render: () => (
+      render: (_: any, record: any) => (
         <Space>
-          <Button type="text" icon={<EyeOutlined className="text-blue-500" />} />
+          <Button 
+  type="text" 
+  icon={<EyeOutlined className="text-blue-500" />} 
+  onClick={() => navigate(`/organizer/tournaments/${record.id}`)}
+     />
           <Button type="text" icon={<EditOutlined className="text-green-500" />} />
           <Button type="text" icon={<DeleteOutlined className="text-red-500" />} />
         </Space>
