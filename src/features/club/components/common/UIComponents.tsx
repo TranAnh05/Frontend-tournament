@@ -1,6 +1,6 @@
 import React from "react";
 
-// ── StatCard ─────────────────────────────────────────────────────
+// ── StatCard
 interface StatCardProps {
   label: string;
   value: string | number;
@@ -21,7 +21,7 @@ export function StatCard({ label, value, icon }: StatCardProps) {
   );
 }
 
-// ── Card ─────────────────────────────────────────────────────────
+// ── Card 
 interface CardProps {
   children: React.ReactNode;
   className?: string;
@@ -34,7 +34,7 @@ export function Card({ children, className = "" }: CardProps) {
   );
 }
 
-// ── CardHeader ───────────────────────────────────────────────────
+// ── CardHeader 
 interface CardHeaderProps {
   title: string;
   icon?: string;
@@ -52,7 +52,7 @@ export function CardHeader({ title, icon, action }: CardHeaderProps) {
   );
 }
 
-// ── Th / Td ──────────────────────────────────────────────────────
+// ── Th / Td 
 export function Th({ children }: { children: React.ReactNode }) {
   return (
     <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200">
@@ -73,7 +73,7 @@ export function Td({ children, className = "" }: TdProps) {
   );
 }
 
-// ── Modal ────────────────────────────────────────────────────────
+// ── Modal 
 interface ModalProps {
   title: string;
   onClose: () => void;
@@ -103,7 +103,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
   );
 }
 
-// ── Field ────────────────────────────────────────────────────────
+// ── Field 
 interface FieldProps {
   label: string;
   children: React.ReactNode;
@@ -117,7 +117,7 @@ export function Field({ label, children }: FieldProps) {
   );
 }
 
-// ── Input ────────────────────────────────────────────────────────
+// ── Input 
 interface InputProps {
   value: string;
   onChange: (value: string) => void;
@@ -136,7 +136,7 @@ export function Input({ value, onChange, placeholder, type = "text" }: InputProp
   );
 }
 
-// ── Btn ──────────────────────────────────────────────────────────
+// ── Btn 
 interface BtnProps {
   children: React.ReactNode;
   onClick?: () => void;
@@ -168,7 +168,7 @@ export function Btn({ children, onClick, variant = "outline", size = "md", disab
   );
 }
 
-// ── Avatar ───────────────────────────────────────────────────────
+// ── Avatar
 const AVATAR_COLORS = [
   ['#1D9E75','#E1F5EE'],['#1565C0','#E3F2FD'],['#7B3FA8','#F3E8FF'],
   ['#C62828','#FFEBEE'],['#F57F17','#FFF8E1'],['#2E7D32','#E8F5E9'],
@@ -192,7 +192,7 @@ export function Avatar({ name, size = 36 }: { name: string; size?: number }) {
   );
 }
 
-// ── Badge ────────────────────────────────────────────────────────
+// ── Badge 
 const STATUS_CFG: Record<string, { bg: string; color: string; label: string }> = {
   ACTIVE:            { bg: '#E8F8F2', color: '#0F6E56', label: 'Hoạt động' },
   APPROVED:          { bg: '#E8F8F2', color: '#0F6E56', label: 'Đã duyệt' },
@@ -224,7 +224,7 @@ export function Badge({ status }: { status: string }) {
   );
 }
 
-// ── Pill ─────────────────────────────────────────────────────────
+// ── Pill 
 export function Pill({ label, color = '#6B7280', bg = '#F1F3F5' }: { label: string; color?: string; bg?: string }) {
   return (
     <span style={{ background: bg, color }} className="text-[11px] font-semibold px-2 py-0.5 rounded-md">
@@ -233,7 +233,7 @@ export function Pill({ label, color = '#6B7280', bg = '#F1F3F5' }: { label: stri
   );
 }
 
-// ── Select ───────────────────────────────────────────────────────
+// ── Select
 export function Select({
   value, onChange, options,
 }: {
