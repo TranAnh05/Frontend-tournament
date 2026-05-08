@@ -3,14 +3,24 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import LoginPage from '@/features/auth/pages/LoginPage';
 import RegisterPage from '@/features/auth/pages/RegisterPage';
+<<<<<<< kiet/club
 import ClubProfilePage from '@/features/club/pages/ClubProfilePage';
 import DashboardLayout from '@/features/club/DashboardLayout';
 import MembersPage from '@/features/club/pages/Memberspage';
 import MatchesPage from '@/features/club/pages/Matchespage ';
 import TournamentsPage from '@/features/club/pages/Tournamentspage';
 
+=======
+import TournamentListPage from '@/features/tournaments/pages/ORGANIZER/TournamentListPage';
+import AdminLayout from '@/features/admin/layouts/AdminLayout';
+import SportsManagementPage from '@/features/admin/pages/SportsManagementPage';
+>>>>>>> main
 
 const AdminDashboard = () => <div className="p-10"><h1>Dashboard Admin</h1></div>;
+const BanToChuc = () => <div className="p-10"><h1>Ban To Chuc</h1></div>;
+const DiaDiemSan = () => <div className="p-10"><h1>Dia Diem San</h1></div>;
+const KiLuat = () => <div className="p-10"><h1>Ky Luat</h1></div>;
+const CauHinh = () => <div className="p-10"><h1>Cau Hinh</h1></div>;
 const OrganizerDashboard = () => <div className="p-10"><h1>Dashboard Ban Tổ Chức</h1></div>;
 const ClubDashboard = () => <div className="p-10"><h1>Dashboard Câu Lạc Bộ</h1></div>;
 const RefereeDashboard = () => <div className="p-10"><h1>Dashboard Trọng Tài</h1></div>;
@@ -37,8 +47,36 @@ export const router = createBrowserRouter([
   {
     element: <ProtectedRoute allowedRoles={['ROLE_ADMIN']} />,
     children: [
-      { path: '/admin', element: <AdminDashboard /> },
-      // Thêm các trang con của Admin ở đây: /admin/users, /admin/settings...
+      { 
+        path: '/admin',
+        element: <AdminLayout />,
+        children: [
+          {
+            index: true,
+            element: <AdminDashboard />
+          },
+          {
+            path: 'sports',
+            element: <SportsManagementPage />
+          },
+          {
+            path: 'organizers',
+            element: <BanToChuc />
+          },
+          {
+            path: 'venues',
+            element: <DiaDiemSan />
+          },
+          {
+            path: 'disciplines',
+            element: <KiLuat />
+          },
+          {
+            path: 'settings',
+            element: <CauHinh />
+          }
+        ]
+      },
     ],
   },
 
@@ -46,11 +84,12 @@ export const router = createBrowserRouter([
   {
     element: <ProtectedRoute allowedRoles={['ROLE_ORGANIZER']} />,
     children: [
-      { path: '/organizer', element: <OrganizerDashboard /> },
+      { path: '/organizer', element: <TournamentListPage /> },
     ],
   },
 
   // Dành riêng cho Câu lạc bộ (Club)
+<<<<<<< kiet/club
  {
     element: <ProtectedRoute allowedRoles={['ROLE_CLUB_MANAGER']} />,
     children: [{
@@ -62,6 +101,13 @@ export const router = createBrowserRouter([
          { path: '/club/tournaments', element: <TournamentsPage /> },
       ],
     }],
+=======
+  {
+    element: <ProtectedRoute allowedRoles={['ROLE_CLUB_MANAGER']} />,
+    children: [
+      { path: '/club', element: <ClubDashboard /> },
+    ],
+>>>>>>> main
   },
   // Dành riêng cho Trọng tài (Referee)
   {
