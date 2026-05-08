@@ -10,6 +10,9 @@ export interface TournamentResponse {
   venueName: string;
   startDate: string;
   endDate: string;
+  winPoints: number;
+  drawPoints: number;
+  lossPoints: number;
   minAthletes: number;
   maxAthletes: number;
   format: string;

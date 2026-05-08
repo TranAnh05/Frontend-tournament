@@ -36,6 +36,7 @@ export interface DisciplineResponse {
   status: string;
   createdAt: string;
   athleteName: string | null;
+  tournamentName: string | null; // ← thêm dòng này
 }
 
 export const statsApi = {

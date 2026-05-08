@@ -7,6 +7,7 @@ import ClubProfilePage from '@/features/club/pages/ClubProfilePage';
 import DashboardLayout from '@/features/club/DashboardLayout';
 import MembersPage from '@/features/club/pages/Memberspage';
 import MatchesPage from '@/features/club/pages/Matchespage ';
+import TournamentsPage from '@/features/club/pages/Tournamentspage';
 
 
 const AdminDashboard = () => <div className="p-10"><h1>Dashboard Admin</h1></div>;
@@ -58,7 +59,7 @@ export const router = createBrowserRouter([
         { path: '/club', element: <ClubProfilePage /> },
         { path: '/club/members', element: <MembersPage /> },
         { path: '/club/matches', element: <MatchesPage /> },
-        // { path: '/club/tournaments', element: <ComingSoon title="Giải đấu" /> },
+         { path: '/club/tournaments', element: <TournamentsPage /> },
       ],
     }],
   },
