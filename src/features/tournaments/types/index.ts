@@ -12,3 +12,32 @@ export interface Tournament {
   format: TournamentFormat;
   maxAthletes: number;
 }
+export interface Court {
+  id: number;
+  name: string;
+}
+
+export interface VenueDetail {
+  id: number;
+  name: string;
+  address: string;
+  courts: Court[];
+}
+
+export interface TournamentDetail {
+  id: number;
+  name: string;
+  sportName: string;
+  startDate: string;
+  endDate: string;
+  winPoints: number;
+  drawPoints: number;
+  lostPonits: number;
+  format: string;
+  status: string;
+  maxAthletes: number;
+  minAthletes: number;
+  venue: VenueDetail; // Bọc toàn bộ Venue và Courts
+  createdAt: string;
+  updatedAt: string;
+}

@@ -1,9 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createBrowserRouter, Navigate } from "react-router-dom";
-import ProtectedRoute from "./ProtectedRoute";
+import { createBrowserRouter, Navigate } from 'react-router-dom';
+import ProtectedRoute from './ProtectedRoute';
+import TournamentListPage from '@/features/tournaments/pages/ORGANIZER/TournamentListPage';
+import AdminLayout from '@/features/admin/layouts/AdminLayout';
+import TournamentDetailPage from '@/features/tournaments/pages/ORGANIZER/TournamentDetailPage';
 import LoginPage from "@/features/auth/pages/LoginPage";
 import RegisterPage from "@/features/auth/pages/RegisterPage";
-import AdminLayout from "@/features/admin/layouts/AdminLayout";
 import SportsManagementPage from "@/features/admin/pages/SportsManagementPage";
 import VenuesManagementPage from "@/features/admin/pages/VenuesManagementPage";
 import ClubProfilePage from '@/features/club/pages/ClubProfilePage';
@@ -137,6 +139,7 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute allowedRoles={['ROLE_ORGANIZER']} />,
     children: [
       { path: '/organizer', element: <TournamentListPage /> },
+      { path: "/organizer/tournaments/:id",element:<TournamentDetailPage /> }
     ],
   },
  {

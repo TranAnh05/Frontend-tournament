@@ -1,5 +1,5 @@
 import type { ApiResponse } from '@/types/api';
-import { type Tournament } from '../types';
+import { type Tournament, type TournamentDetail } from '../types';
 import api from '@/services/api';
 
 export const tournamentApi = {
@@ -12,7 +12,10 @@ export const tournamentApi = {
         sort: 'id,desc'
       } });
   },
-  
+  // xem toàn bộ thông tin giải
+  getTournamentById: (id: string | number): Promise<ApiResponse<TournamentDetail>>  => {
+    return api.get(`/tournaments/${id}`);
+  },
   // Xóa giải đấu
   deleteTournament: (id: number) => {
     return api.delete(`/tournaments/${id}`);
