@@ -268,12 +268,7 @@ export default function ClubProfilePage() {
                 return (
                   <div key={r.id} className="border border-gray-200 rounded-xl p-4">
                     <div className="flex items-center justify-between mb-1">
-                      {/* <span className="font-bold text-[14px] text-gray-900">{r.tournamentName}</span> */}
-                      // THAY bằng
-                      <span className="font-bold text-[14px] text-gray-900">
-                        Giải #{r.tournamentId}
-                      </span>
-
+                     <span className="font-bold text-[14px] text-gray-900">{r.tournamentName}</span>
                       <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full" style={{ background: st.bg, color: st.color }}>{st.label}</span>
                     </div>
                     <div className="flex gap-3 text-xs text-gray-500 mt-1.5">

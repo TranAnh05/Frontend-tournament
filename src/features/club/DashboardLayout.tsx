@@ -50,6 +50,12 @@ export default function DashboardLayout() {
           <div>
             <div className="text-sm font-extrabold text-gray-900 leading-tight">Tournament</div>
             <div className="text-xs text-gray-400">Management</div>
+
+             {userRole === 'ROLE_CLUB_MANAGER' && user?.fullName && (
+      <div className="text-xs text-green-700 font-semibold mt-0.5 truncate max-w-[120px]">
+        👤 {user.fullName}
+      </div>
+    )}
           </div>
         </div>
 
