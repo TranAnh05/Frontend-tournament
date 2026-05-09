@@ -88,7 +88,9 @@ export const router = createBrowserRouter([
 
     // Dành riêng cho Ban Tổ Chức (Organizer)
 
-   
+    // Dành riêng cho Câu lạc bộ (Club)
+    
+
     // Dành riêng cho Trọng tài (Referee)
     {
         element: <ProtectedRoute allowedRoles={["ROLE_REFEREE"]} />,

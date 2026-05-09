@@ -41,3 +41,20 @@ export interface TournamentDetail {
   createdAt: string;
   updatedAt: string;
 }
+export interface TournamentUpdateRequest {
+ id: number;
+  name: string;
+  sportName: string;
+  startDate: string;
+  endDate: string;
+  winPoints: number;
+  drawPoints: number;
+  lostPonits: number;
+  format: string;
+  status: string;
+  maxAthletes: number;
+  minAthletes: number;
+  venue: VenueDetail; // Bọc toàn bộ Venue và Courts
+  createdAt: string;
+  updatedAt: string;
+}
