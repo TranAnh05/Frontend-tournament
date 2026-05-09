@@ -23,22 +23,31 @@ export interface RegistrationResponse {
   id: number;
   tournamentId: number;
   clubId: number;
+  tournamentName: string; 
   status: string;
   homeKitColor: string;
   awayKitColor: string;
   appliedAt: string;
   reviewedAt: string | null;
 }
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
 
 export const tournamentApi = {
   getAllTournaments: async (): Promise<TournamentResponse[]> => {
     const res = await api.get('/tournaments');
-    return (res as unknown as ApiResponse<TournamentResponse[]>).result;
+    const page = res as unknown as PageResponse<TournamentResponse>;
+    return page.content ?? [];
   },
 
   getMyRegistrations: async (): Promise<RegistrationResponse[]> => {
     const res = await api.get('/tournaments/registrations/my');
-    return (res as unknown as ApiResponse<RegistrationResponse[]>).result;
+    return (res as unknown as ApiResponse<RegistrationResponse[]>).result ?? [];
   },
 
   register: async (tournamentId: number, data: {
