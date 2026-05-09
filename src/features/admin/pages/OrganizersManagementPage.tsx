@@ -6,6 +6,7 @@ import { ConfirmDialog } from "../components/ConfirmDialog";
 import { OrganizersTable } from "../components/organizers/OrganizersTable";
 import { useGetOrganizers } from "../hooks/organizers/useGetOrganizers";
 import { type OrganizerResponse } from "../types/organizers";
+import { OrganizerDetailModal } from "../components/organizers/OrganizerDetailModal";
 
 const useDebounce = (value: string, delay: number) => {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -24,8 +25,9 @@ export const OrganizersManagementPage = () => {
     const constSize = 8;
 
     const [isDetailOpen, setIsDetailOpen] = useState(false);
-    const [selectedOrganizer, setSelectedOrganizer] =
-        useState<OrganizerResponse | null>(null);
+    const [selectedOrganizerId, setSelectedOrganizerId] = useState<
+        number | null
+    >(null);
 
     const [confirmModal, setConfirmModal] = useState<{
         isOpen: boolean;
@@ -37,7 +39,6 @@ export const OrganizersManagementPage = () => {
 
     const { data, isLoading, fetchOrganizers } = useGetOrganizers();
 
-    // (Stub) Sẽ thay thế bằng useMutateOrganizer ở bước sau
     const isChangingStatus = false;
 
     useEffect(() => {
@@ -51,7 +52,7 @@ export const OrganizersManagementPage = () => {
 
     // --- HANDLERS ---
     const handleViewDetail = (organizer: OrganizerResponse) => {
-        setSelectedOrganizer(organizer);
+        setSelectedOrganizerId(organizer.id);
         setIsDetailOpen(true);
     };
 
@@ -160,12 +161,15 @@ export const OrganizersManagementPage = () => {
                 }
             />
 
-            {/* <OrganizerDetailDrawer 
-          isOpen={isDetailOpen} 
-          organizerData={selectedOrganizer} 
-          onClose={() => setIsDetailOpen(false)} 
-        /> 
-      */}
+            {/* MODAL CHI TIẾT HỒ SƠ MỚI */}
+            <OrganizerDetailModal
+                isOpen={isDetailOpen}
+                organizerId={selectedOrganizerId}
+                onClose={() => {
+                    setIsDetailOpen(false);
+                    setSelectedOrganizerId(null);
+                }}
+            />
         </div>
     );
 };
