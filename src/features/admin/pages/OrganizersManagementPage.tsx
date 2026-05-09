@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Pagination } from "../components/Pagination";
-import { ConfirmDialog } from "../components/ConfirmDialog";
 import { OrganizersTable } from "../components/organizers/OrganizersTable";
 import { useGetOrganizers } from "../hooks/organizers/useGetOrganizers";
 import { type OrganizerResponse } from "../types/organizers";
 import { OrganizerDetailModal } from "../components/organizers/OrganizerDetailModal";
+import { OrganizerStatusModal } from "../components/organizers/OrganizerStatusModal";
 
 const useDebounce = (value: string, delay: number) => {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -29,7 +29,7 @@ export const OrganizersManagementPage = () => {
         number | null
     >(null);
 
-    const [confirmModal, setConfirmModal] = useState<{
+    const [statusModal, setStatusModal] = useState<{
         isOpen: boolean;
         organizer: OrganizerResponse | null;
     }>({
@@ -38,8 +38,6 @@ export const OrganizersManagementPage = () => {
     });
 
     const { data, isLoading, fetchOrganizers } = useGetOrganizers();
-
-    const isChangingStatus = false;
 
     useEffect(() => {
         fetchOrganizers({
@@ -57,13 +55,7 @@ export const OrganizersManagementPage = () => {
     };
 
     const handleRequestToggle = (organizer: OrganizerResponse) => {
-        setConfirmModal({ isOpen: true, organizer });
-    };
-
-    const handleConfirmToggle = async () => {
-        // Sẽ gọi hàm updateStatus từ useMutateOrganizer ở bước sau
-        console.log("Đổi trạng thái của:", confirmModal.organizer?.fullName);
-        setConfirmModal({ isOpen: false, organizer: null });
+        setStatusModal({ isOpen: true, organizer });
     };
 
     return (
@@ -132,42 +124,28 @@ export const OrganizersManagementPage = () => {
                 </div>
             )}
 
-            <ConfirmDialog
-                isOpen={confirmModal.isOpen}
-                type={
-                    confirmModal.organizer?.status === "ACTIVE"
-                        ? "danger"
-                        : "info"
-                }
-                title={
-                    confirmModal.organizer?.status === "ACTIVE"
-                        ? "Khóa tài khoản BTC?"
-                        : "Mở khóa tài khoản?"
-                }
-                message={
-                    confirmModal.organizer?.status === "ACTIVE"
-                        ? `Bạn có chắc chắn muốn khóa tài khoản của "${confirmModal.organizer?.fullName}"? Thành viên này sẽ không thể đăng nhập và điều hành các giải đấu.`
-                        : `Mở khóa tài khoản cho "${confirmModal.organizer?.fullName}" để tiếp tục công tác tổ chức?`
-                }
-                confirmLabel={
-                    confirmModal.organizer?.status === "ACTIVE"
-                        ? "Khóa tài khoản"
-                        : "Mở khóa"
-                }
-                isLoading={isChangingStatus}
-                onConfirm={handleConfirmToggle}
-                onCancel={() =>
-                    setConfirmModal({ isOpen: false, organizer: null })
-                }
-            />
-
-            {/* MODAL CHI TIẾT HỒ SƠ MỚI */}
             <OrganizerDetailModal
                 isOpen={isDetailOpen}
                 organizerId={selectedOrganizerId}
                 onClose={() => {
                     setIsDetailOpen(false);
                     setSelectedOrganizerId(null);
+                }}
+            />
+
+            <OrganizerStatusModal
+                isOpen={statusModal.isOpen}
+                organizer={statusModal.organizer}
+                onClose={() =>
+                    setStatusModal({ isOpen: false, organizer: null })
+                }
+                onSuccess={() => {
+                    fetchOrganizers({
+                        search: debouncedSearch || undefined,
+                        status: statusFilter || undefined,
+                        page: page,
+                        size: constSize,
+                    });
                 }}
             />
         </div>

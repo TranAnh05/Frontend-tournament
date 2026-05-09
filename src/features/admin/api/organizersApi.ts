@@ -4,6 +4,8 @@ import {
     type OrganizerResponse,
     type OrganizerFilterParams,
     type OrganizerDetailResponse,
+    type OrganizerStatusUpdateRequest,
+    type OrganizerStatusUpdateResponse,
 } from "../types/organizers";
 import { type PageResponse } from "../types/Pagination";
 
@@ -16,5 +18,12 @@ export const organizersApi = {
 
     getDetail: (id: number): Promise<ApiResponse<OrganizerDetailResponse>> => {
         return api.get(`/admin/organizers/${id}`);
+    },
+
+    updateStatus: (
+        id: number,
+        data: OrganizerStatusUpdateRequest,
+    ): Promise<ApiResponse<OrganizerStatusUpdateResponse>> => {
+        return api.patch(`/admin/organizers/${id}/status`, data);
     },
 };
