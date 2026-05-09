@@ -3,9 +3,7 @@ import {
   LayoutDashboard, 
   Trophy, 
   Users, 
-  MapPin, 
-  ShieldAlert, 
-  Settings 
+  MapPin
 } from 'lucide-react'; 
 import { cn } from '@/utils/classNames';
 
@@ -14,8 +12,6 @@ const menuItems = [
   { label: 'Môn thi đấu', path: '/admin/sports', icon: Trophy },
   { label: 'Ban tổ chức', path: '/admin/organizers', icon: Users },
   { label: 'Địa điểm & Sân', path: '/admin/venues', icon: MapPin },
-  { label: 'Kỷ luật', path: '/admin/disciplines', icon: ShieldAlert },
-  { label: 'Cấu hình', path: '/admin/settings', icon: Settings },
 ];
 
 export const AdminSidebar = () => {

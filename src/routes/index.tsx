@@ -1,44 +1,26 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createBrowserRouter, Navigate } from 'react-router-dom';
-import ProtectedRoute from './ProtectedRoute';
-import TournamentListPage from '@/features/tournaments/pages/ORGANIZER/TournamentListPage';
-import AdminLayout from '@/features/admin/layouts/AdminLayout';
-import TournamentDetailPage from '@/features/tournaments/pages/ORGANIZER/TournamentDetailPage';
+import { createBrowserRouter, Navigate } from "react-router-dom";
+import ProtectedRoute from "./ProtectedRoute";
+import TournamentListPage from "@/features/tournaments/pages/ORGANIZER/TournamentListPage";
+import AdminLayout from "@/features/admin/layouts/AdminLayout";
+import TournamentDetailPage from "@/features/tournaments/pages/ORGANIZER/TournamentDetailPage";
 import LoginPage from "@/features/auth/pages/LoginPage";
 import RegisterPage from "@/features/auth/pages/RegisterPage";
 import SportsManagementPage from "@/features/admin/pages/SportsManagementPage";
 import VenuesManagementPage from "@/features/admin/pages/VenuesManagementPage";
-import ClubProfilePage from '@/features/club/pages/ClubProfilePage';
-import DashboardLayout from '@/features/club/DashboardLayout';
-import MembersPage from '@/features/club/pages/Memberspage';
-import MatchesPage from '@/features/club/pages/Matchespage ';
-import TournamentsPage from '@/features/club/pages/Tournamentspage';
+import ClubProfilePage from "@/features/club/pages/ClubProfilePage";
+import DashboardLayout from "@/features/club/DashboardLayout";
+import MembersPage from "@/features/club/pages/Memberspage";
+import MatchesPage from "@/features/club/pages/Matchespage ";
+import TournamentsPage from "@/features/club/pages/Tournamentspage";
+import OrganizersManagementPage from "@/features/admin/pages/OrganizersManagementPage";
 
 const AdminDashboard = () => (
     <div className="p-10">
         <h1>Dashboard Admin</h1>
     </div>
 );
-const BanToChuc = () => (
-    <div className="p-10">
-        <h1>Ban To Chuc</h1>
-    </div>
-);
-const KiLuat = () => (
-    <div className="p-10">
-        <h1>Ky Luat</h1>
-    </div>
-);
-const CauHinh = () => (
-    <div className="p-10">
-        <h1>Cau Hinh</h1>
-    </div>
-);
-const OrganizerDashboard = () => (
-    <div className="p-10">
-        <h1>Dashboard Ban Tổ Chức</h1>
-    </div>
-);
+
 const RefereeDashboard = () => (
     <div className="p-10">
         <h1>Dashboard Trọng Tài</h1>
@@ -93,31 +75,15 @@ export const router = createBrowserRouter([
                     },
                     {
                         path: "organizers",
-                        element: <BanToChuc />,
+                        element: <OrganizersManagementPage />,
                     },
                     {
                         path: "venues",
                         element: <VenuesManagementPage />,
-                    },
-                    {
-                        path: "disciplines",
-                        element: <KiLuat />,
-                    },
-                    {
-                        path: "settings",
-                        element: <CauHinh />,
-                    },
+                    }
                 ],
             },
         ],
-    },
-
-    // Dành riêng cho Ban Tổ Chức (Organizer)
-
-    // Dành riêng cho Câu lạc bộ (Club)
-    {
-        element: <ProtectedRoute allowedRoles={["ROLE_CLUB_MANAGER"]} />,
-        children: [{ path: "/club", element: <ClubDashboard /> }],
     },
 
     // Dành riêng cho Trọng tài (Referee)
@@ -125,36 +91,31 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute allowedRoles={["ROLE_REFEREE"]} />,
         children: [{ path: "/referee", element: <RefereeDashboard /> }],
     },
-        
-         {
-    element: <ProtectedRoute allowedRoles={['ROLE_ORGANIZER']} />,
-    children: [
-      { path: '/organizer', element: <TournamentListPage /> },
-      { path: "/organizer/tournaments/:id",element:<TournamentDetailPage /> }
-    ],
-  },
 
-  //club
- {
-    element: <ProtectedRoute allowedRoles={['ROLE_CLUB_MANAGER']} />,
-    children: [{
-      element: <DashboardLayout />,
-      children: [
-        { path: '/club', element: <ClubProfilePage /> },
-        { path: '/club/members', element: <MembersPage /> },
-        { path: '/club/matches', element: <MatchesPage /> },
-         { path: '/club/tournaments', element: <TournamentsPage /> },
-      ],
-    }],
-  },
-  // Dành riêng cho Trọng tài (Referee)
-  {
-    element: <ProtectedRoute allowedRoles={['ROLE_REFEREE']} />,
-    children: [
-      { path: '/referee', element: <RefereeDashboard /> },
-    ],
-  },
-
+    {
+        element: <ProtectedRoute allowedRoles={["ROLE_ORGANIZER"]} />,
+        children: [
+            { path: "/organizer", element: <TournamentListPage /> },
+            {
+                path: "/organizer/tournaments/:id",
+                element: <TournamentDetailPage />,
+            },
+        ],
+    },
+    {
+        element: <ProtectedRoute allowedRoles={["ROLE_CLUB_MANAGER"]} />,
+        children: [
+            {
+                element: <DashboardLayout />,
+                children: [
+                    { path: "/club", element: <ClubProfilePage /> },
+                    { path: "/club/members", element: <MembersPage /> },
+                    { path: "/club/matches", element: <MatchesPage /> },
+                    { path: "/club/tournaments", element: <TournamentsPage /> },
+                ],
+            },
+        ],
+    },
     // Dành riêng cho Vận động viên (Athlete)
     {
         element: <ProtectedRoute allowedRoles={["ROLE_ATHLETE"]} />,
