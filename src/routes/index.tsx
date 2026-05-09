@@ -39,11 +39,6 @@ const OrganizerDashboard = () => (
         <h1>Dashboard Ban Tổ Chức</h1>
     </div>
 );
-const ClubDashboard = () => (
-    <div className="p-10">
-        <h1>Dashboard Câu Lạc Bộ</h1>
-    </div>
-);
 const RefereeDashboard = () => (
     <div className="p-10">
         <h1>Dashboard Trọng Tài</h1>
@@ -138,6 +133,8 @@ export const router = createBrowserRouter([
       { path: "/organizer/tournaments/:id",element:<TournamentDetailPage /> }
     ],
   },
+
+  //club
  {
     element: <ProtectedRoute allowedRoles={['ROLE_CLUB_MANAGER']} />,
     children: [{

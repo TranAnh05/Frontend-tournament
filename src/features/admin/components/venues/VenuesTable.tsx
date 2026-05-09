@@ -138,8 +138,8 @@ export const VenuesTable: React.FC<VenuesTableProps> = ({
                                                 className="group flex items-center justify-center w-full focus:outline-none"
                                                 title={
                                                     venue.status === "ACTIVE"
-                                                        ? "Vô hiệu hóa"
-                                                        : "Kích hoạt"
+                                                        ? "Khóa địa điểm"
+                                                        : "Mở khóa"
                                                 }
                                             >
                                                 <div
