@@ -47,3 +47,18 @@ export interface OrganizerDetailResponse {
 
   recentTournaments: TournamentShortResponse[];
 }
+
+export interface OrganizerStatusUpdateRequest {
+  status: 'ACTIVE' | 'INACTIVE';
+  reason: string; 
+}
+
+export interface OrganizerStatusUpdateResponse {
+  userId: number;
+  fullName: string;
+  oldStatus: string;
+  newStatus: string;
+  reason: string;
+  changedByAdmin: string;
+  changedAt: string;
+}
