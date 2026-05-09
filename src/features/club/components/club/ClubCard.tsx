@@ -5,9 +5,10 @@ interface ClubCardProps {
   club: ClubResponse;
   venue: { name: string } | null;
   onEdit?: () => void;
+  onViewDetail?: () => void;  // ← Mới: click vào header để xem chi tiết
 }
 
-export function ClubCard({ club, venue, onEdit }: ClubCardProps) {
+export function ClubCard({ club, venue, onEdit, onViewDetail }: ClubCardProps) {
   const statusColor =
     club.status === "ACTIVE" ? "#10B981" :
     club.status === "PENDING" ? "#F59E0B" : "#EF4444";
@@ -20,15 +21,28 @@ export function ClubCard({ club, venue, onEdit }: ClubCardProps) {
       className="rounded-2xl p-6 text-white flex items-center justify-between gap-5 flex-wrap"
       style={{ background: "linear-gradient(135deg, #0D7A4E 0%, #0a6641 100%)" }}
     >
-      {/* Left: logo + info */}
-      <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-[14px] bg-white/15 flex items-center justify-center text-3xl flex-shrink-0">
+      {/* Left: logo + info — clickable để xem chi tiết */}
+      <div
+        className={`flex items-center gap-4 ${onViewDetail ? "cursor-pointer group" : ""}`}
+        onClick={onViewDetail}
+        title={onViewDetail ? "Xem chi tiết câu lạc bộ" : undefined}
+      >
+        <div className="w-16 h-16 rounded-[14px] bg-white/15 flex items-center justify-center text-3xl flex-shrink-0 transition-transform group-hover:scale-105">
           {club.logoUrl
             ? <img src={club.logoUrl} alt="logo" className="w-[54px] h-[54px] rounded-[10px] object-cover" />
             : "🏟"}
         </div>
         <div>
-          <div className="text-xl font-extrabold mb-0.5">{club.name}</div>
+          <div className="flex items-center gap-2">
+            <div className="text-xl font-extrabold mb-0.5 group-hover:underline underline-offset-2">
+              {club.name}
+            </div>
+            {onViewDetail && (
+              <span className="text-white/60 text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                ↗
+              </span>
+            )}
+          </div>
           <div className="text-[13px] opacity-80 mb-1.5">
             {club.shortName}
             {club.managerName && <span className="ml-2 opacity-70">• HLV: {club.managerName}</span>}
@@ -40,16 +54,6 @@ export function ClubCard({ club, venue, onEdit }: ClubCardProps) {
             >
               {statusLabel}
             </span>
-            {venue && (
-              <span className="bg-white/15 rounded-full px-2.5 py-0.5 text-[11px]">
-                📍 {venue.name}
-              </span>
-            )}
-            {club.contactEmail && (
-              <span className="bg-white/15 rounded-full px-2.5 py-0.5 text-[11px]">
-                ✉️ {club.contactEmail}
-              </span>
-            )}
           </div>
         </div>
       </div>
