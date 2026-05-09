@@ -7,6 +7,7 @@ const NAV_ITEMS: Record<string, { label: string; icon: string; path: string }[]>
     { label: 'Thành viên', icon: '👥', path: '/club/members' },
     { label: 'Lịch thi đấu', icon: '📅', path: '/club/matches' },
     { label: 'Giải đấu', icon: '🏆', path: '/club/tournaments' },
+    { label: 'Chốt danh sách', icon: '📋', path: '/club/roster' },
   ],
   ROLE_ADMIN: [{ label: 'Tổng quan', icon: '📊', path: '/admin' }],
   ROLE_ORGANIZER: [{ label: 'Tổng quan', icon: '📊', path: '/organizer' }],

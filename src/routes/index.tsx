@@ -14,6 +14,7 @@ import MembersPage from "@/features/club/pages/Memberspage";
 import MatchesPage from "@/features/club/pages/Matchespage ";
 import TournamentsPage from "@/features/club/pages/Tournamentspage";
 import OrganizersManagementPage from "@/features/admin/pages/OrganizersManagementPage";
+import RosterPage from "@/features/club/pages/RosterPage";
 
 const AdminDashboard = () => (
     <div className="p-10">
@@ -115,6 +116,7 @@ export const router = createBrowserRouter([
                     { path: "/club/members", element: <MembersPage /> },
                     { path: "/club/matches", element: <MatchesPage /> },
                     { path: "/club/tournaments", element: <TournamentsPage /> },
+                    { path: "/club/roster", element: <RosterPage /> },
                 ],
             },
         ],
