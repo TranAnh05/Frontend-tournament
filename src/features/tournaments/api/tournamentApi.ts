@@ -20,6 +20,7 @@ export const tournamentApi = {
   create: (data: any) => api.post('/tournaments', data),
   getSports: () => api.get('/tournaments/sports/all'),
   getVenues: () => api.get('/tournaments/venues/all'),
+  update: (id: number, data: any) => api.put(`/tournaments/${id}`, data),
   // Xóa giải đấu
   deleteTournament: (id: number) => {
     return api.delete(`/tournaments/${id}`);
