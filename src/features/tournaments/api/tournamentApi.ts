@@ -16,6 +16,10 @@ export const tournamentApi = {
   getTournamentById: (id: string | number): Promise<ApiResponse<TournamentDetail>>  => {
     return api.get(`/tournaments/${id}`);
   },
+
+  create: (data: any) => api.post('/tournaments', data),
+  getSports: () => api.get('/tournaments/sports/all'),
+  getVenues: () => api.get('/tournaments/venues/all'),
   // Xóa giải đấu
   deleteTournament: (id: number) => {
     return api.delete(`/tournaments/${id}`);
