@@ -2,10 +2,14 @@ import { Button, Input } from 'antd';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTournaments } from '../../hooks/useTournaments';
 import TournamentTable from '../../components/TournamentTable';
+import AddTournamentModal from '../../components/AddTournamentModal';
+import { useState } from 'react';
 
 const TournamentListPage = () => {
  const { data, loading, total, queryParams, setQueryParams } = useTournaments();
  // Xử lý khi đổi trang hoặc đổi size
+ const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
   const handleTableChange = (pagination: any) => {
     setQueryParams(prev => ({
       ...prev,
@@ -21,12 +25,23 @@ const TournamentListPage = () => {
       page: 0, // Reset về trang đầu tiên khi tìm kiếm mới
     }));
   };
+  const handleRefresh = () => {
+    setQueryParams(prev => ({ ...prev })); 
+  };
   return (
    <div className="p-6">
       <div className="flex justify-between mb-6">
         <h1 className="text-2xl font-bold">Quản lý Giải đấu</h1>
-        <Button type="primary" icon={<PlusOutlined />} size="large">Tạo giải mới</Button>
+        <Button type="primary" icon={<PlusOutlined />}
+         size="large"
+        onClick={() => setIsAddModalOpen(true)}>Tạo giải mới</Button>
       </div>
+
+      <AddTournamentModal 
+      isOpen={isAddModalOpen} 
+      onClose={() => setIsAddModalOpen(false)} 
+      onRefresh={handleRefresh} // Hàm gọi lại danh sách sau khi thêm thành công
+    />
 
       <div className="bg-white p-4 rounded-t-xl border-b">
         <Input.Search

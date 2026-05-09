@@ -10,17 +10,27 @@ export function useClub() {
   const showToast = useUiStore(s => s.showToast);
 
   const load = async () => {
-    setLoading(true);
-    try {
-      const data = await clubApi.getMyClub();
-      setClub(data);
+  setLoading(true);
+  try {
+    const data = await clubApi.getMyClub();
+    setClub(data);
+    setNotFound(false);
+  } catch (err: any) {
+    if (err.response?.status === 404) {
+      setNotFound(true);
+    } else {
+      // lỗi khác: 500, 401, network... vẫn set notFound = false
+      // nhưng club = null → trang không render gì
+      // nên cần set một state error riêng, hoặc đơn giản nhất:
       setNotFound(false);
-    } catch (err: any) {
-      if (err.response?.status === 404) setNotFound(true);
-    } finally {
-      setLoading(false);
+      setClub(null);
+      // log ra để debug
+      console.error("useClub error:", err.response?.status, err.response?.data);
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => { load(); }, []);
 

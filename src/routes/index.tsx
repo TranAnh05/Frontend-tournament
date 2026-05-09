@@ -21,16 +21,6 @@ const AdminDashboard = () => (
     </div>
 );
 
-const OrganizerDashboard = () => (
-    <div className="p-10">
-        <h1>Dashboard Ban Tổ Chức</h1>
-    </div>
-);
-const ClubDashboard = () => (
-    <div className="p-10">
-        <h1>Dashboard Câu Lạc Bộ</h1>
-    </div>
-);
 const RefereeDashboard = () => (
     <div className="p-10">
         <h1>Dashboard Trọng Tài</h1>
@@ -96,18 +86,6 @@ export const router = createBrowserRouter([
         ],
     },
 
-    // Dành riêng cho Ban Tổ Chức (Organizer)
-    {
-        element: <ProtectedRoute allowedRoles={["ROLE_ORGANIZER"]} />,
-        children: [{ path: "/organizer", element: <OrganizerDashboard /> }],
-    },
-
-    // Dành riêng cho Câu lạc bộ (Club)
-    {
-        element: <ProtectedRoute allowedRoles={["ROLE_CLUB_MANAGER"]} />,
-        children: [{ path: "/club", element: <ClubDashboard /> }],
-    },
-
     // Dành riêng cho Trọng tài (Referee)
     {
         element: <ProtectedRoute allowedRoles={["ROLE_REFEREE"]} />,
@@ -138,12 +116,6 @@ export const router = createBrowserRouter([
             },
         ],
     },
-    // Dành riêng cho Trọng tài (Referee)
-    {
-        element: <ProtectedRoute allowedRoles={["ROLE_REFEREE"]} />,
-        children: [{ path: "/referee", element: <RefereeDashboard /> }],
-    },
-
     // Dành riêng cho Vận động viên (Athlete)
     {
         element: <ProtectedRoute allowedRoles={["ROLE_ATHLETE"]} />,
