@@ -20,7 +20,7 @@ export const useLogin = () => {
       loginSuccess(res.result);
       
       // Thông báo và điều hướng
-      toast.success(`Đăng nhâp thành công`);
+      toast.success(`Đăng nhập thành công`);
       const homeRoute = getHomeRoute(res.result.roles);
       navigate(homeRoute, { replace: true });
       
