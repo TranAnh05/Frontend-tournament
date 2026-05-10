@@ -1,5 +1,5 @@
 import { Button, Input } from 'antd';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { PlusOutlined, SearchOutlined,ExclamationCircleFilled } from '@ant-design/icons';
 import { useTournaments } from '../../hooks/useTournaments';
 import TournamentTable from '../../components/TournamentTable';
 import AddTournamentModal from '../../components/AddTournamentModal';
@@ -77,6 +77,7 @@ const TournamentListPage = () => {
             showTotal: (total: number) => `Tổng cộng ${total} giải đấu`,
           }}
           onChange={handleTableChange}
+            onRefresh={handleRefresh} // Truyền hàm load lại dữ liệu
         />
         {/* Modal Cập nhật */}
 <UpdateTournamentModal 
