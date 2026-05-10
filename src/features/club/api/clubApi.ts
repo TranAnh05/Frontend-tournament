@@ -1,6 +1,32 @@
 import api from '@/services/api';
 import type { ApiResponse } from '@/types/api';
 
+export interface ClubMemberInClub {
+  memberId: number;
+  athleteId: number;
+  fullName: string;
+  identityNumber: string;
+  dateOfBirth: string;
+  preferredNumber: number;
+  preferredPosition: string;
+  healthStatus: string;
+  clubRole: string;
+  joinStatus: string;
+}
+
+export interface TournamentHistoryResponse {
+  tournamentId: number;
+  tournamentName: string;
+  season: string;
+  registrationStatus: string;
+  matchesPlayed: number;
+  matchesWon: number;
+  matchesDrawn: number;
+  matchesLost: number;
+  totalPoints: number;
+  ranking: number | null;
+}
+
 export interface ClubResponse {
   id: number;
   name: string;
@@ -13,6 +39,8 @@ export interface ClubResponse {
   contactPhone: string;
   status: string;
   managerName: string;
+  members: ClubMemberInClub[];            
+  tournamentHistory: TournamentHistoryResponse[];
 }
 
 export interface CreateClubRequest {

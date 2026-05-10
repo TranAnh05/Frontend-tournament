@@ -2,19 +2,16 @@ import { useState, useEffect } from "react";
 import { useClub } from "../hooks/useClub";
 import { ClubCard } from "../components/club/ClubCard";
 import { StatCard, Card, CardHeader, Th, Td, Modal, Field, Input, Btn } from "../components/common/UIComponents";
-import { athleteApi } from "../api/athleteApi";
+
 import { matchApi } from "../api/matchApi";
-import { tournamentApi } from "../api/tournamentApi";
 import { statsApi } from "../api/statsApi";
-import type { ClubMemberResponse } from "../api/athleteApi";
+
 import type { MatchResponse } from "../api/matchApi";
-// import type { RegistrationResponse, DisciplineResponse } from "../api/tournamentApi";
-import type { RegistrationResponse } from "../api/tournamentApi";
 import type { DisciplineResponse } from "../api/statsApi";
 import type { CreateClubRequest, UpdateClubRequest } from "../api/clubApi";
 
 
-type DetailModal = "matches" | "tournaments" | "disciplines" | null;
+type DetailModal = "matches" | "tournaments" | "disciplines" | "clubDetail" | null;
 
 const MATCH_STATUS_LABEL: Record<string, { label: string; color: string; bg: string }> = {
   SCHEDULED: { label: "Sắp diễn ra", color: "#1565C0", bg: "#E3F2FD" },
@@ -49,21 +46,19 @@ export default function ClubProfilePage() {
     name: "", shortName: "", headquarters: "", contactEmail: "", contactPhone: "",
   });
 
-  const [members, setMembers] = useState<ClubMemberResponse[]>([]);
   const [matches, setMatches] = useState<MatchResponse[]>([]);
-  const [registrations, setRegistrations] = useState<RegistrationResponse[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineResponse[]>([]);
 
   useEffect(() => {
     if (!club) return;
-    athleteApi.getMembers("APPROVED").then(setMembers).catch(() => setMembers([]));
     matchApi.getMyMatches().then(setMatches).catch(() => setMatches([]));
-    tournamentApi.getMyRegistrations().then(setRegistrations).catch(() => setRegistrations([]));
     statsApi.getDisciplines().then(setDisciplines).catch(() => setDisciplines([]));
   }, [club]);
 
+  const members = club?.members ?? [];
+  const tournamentHistory = club?.tournamentHistory ?? [];
   const playedMatches = matches.filter(m => m.status === "FINISHED" || m.status === "IN_PROGRESS");
-  const approvedRegs = registrations.filter(r => r.status === "APPROVED");
+  const approvedRegs = tournamentHistory.filter(r => r.registrationStatus === "APPROVED");
 
   if (loading) return (
     <div className="flex items-center justify-center h-[300px] text-gray-500">⏳ Đang tải...</div>
@@ -127,6 +122,7 @@ export default function ClubProfilePage() {
       <ClubCard
         club={club}
         venue={club.homeVenueName ? { name: club.homeVenueName } : null}
+        onViewDetail={() => setDetailModal("clubDetail")}
         onEdit={() => {
           setForm({ name: club.name, shortName: club.shortName, headquarters: club.headquarters, contactEmail: club.contactEmail, contactPhone: club.contactPhone });
           setEditModal(true);
@@ -204,7 +200,68 @@ export default function ClubProfilePage() {
         </table>
       </Card>
 
-      {/* ── Modal chỉnh sửa CLB ──────────────────────────── */}
+      {/* ── Modal chi tiết CLB ───────────────────────────── */}
+      {detailModal === "clubDetail" && (
+        <Modal title="🏟 Thông tin câu lạc bộ" onClose={() => setDetailModal(null)}>
+          {/* Banner nhỏ */}
+          <div
+            className="rounded-xl p-4 text-white flex items-center gap-4 mb-5"
+            style={{ background: "linear-gradient(135deg, #0D7A4E 0%, #0a6641 100%)" }}
+          >
+            <div className="w-14 h-14 rounded-[12px] bg-white/15 flex items-center justify-center text-3xl flex-shrink-0">
+              {club.logoUrl
+                ? <img src={club.logoUrl} alt="logo" className="w-[48px] h-[48px] rounded-[8px] object-cover" />
+                : "🏟"}
+            </div>
+            <div>
+              <div className="text-lg font-extrabold">{club.name}</div>
+              <div className="text-sm opacity-80">{club.shortName}</div>
+              <span
+                className="mt-1 inline-block text-white border rounded-full px-2.5 py-0.5 text-[11px] font-bold"
+                style={{
+                  background: (club.status === "ACTIVE" ? "#10B981" : club.status === "PENDING" ? "#F59E0B" : "#EF4444") + "33",
+                  borderColor: (club.status === "ACTIVE" ? "#10B981" : club.status === "PENDING" ? "#F59E0B" : "#EF4444") + "88",
+                }}
+              >
+                {club.status === "ACTIVE" ? "Đang hoạt động" : club.status === "PENDING" ? "Chờ duyệt" : club.status}
+              </span>
+            </div>
+          </div>
+
+          {/* Thông tin chi tiết */}
+          <div className="flex flex-col gap-3">
+            {[
+              { icon: "👤", label: "Quản lý / HLV", value: club.managerName || "—" },
+              { icon: "🏠", label: "Trụ sở", value: club.headquarters || "—" },
+              { icon: "📍", label: "Sân nhà", value: club.homeVenueName || "—" },
+              { icon: "✉️", label: "Email liên hệ", value: club.contactEmail || "—" },
+              { icon: "📞", label: "Số điện thoại", value: club.contactPhone || "—" },
+            ].map((row, i) => (
+              <div key={i} className="flex items-start gap-3 py-2.5 border-b border-gray-100 last:border-0">
+                <span className="text-base w-6 flex-shrink-0">{row.icon}</span>
+                <span className="text-xs text-gray-400 w-[110px] flex-shrink-0 pt-0.5">{row.label}</span>
+                <span className="text-[13px] font-semibold text-gray-800 flex-1">{row.value}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Thống kê nhanh */}
+          <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-gray-100">
+            {[
+              { icon: "👥", label: "Thành viên", value: members.length },
+              { icon: "🏆", label: "Giải tham gia", value: approvedRegs.length },
+              { icon: "⚽", label: "Trận đã đấu", value: playedMatches.length },
+            ].map((s, i) => (
+              <div key={i} className="bg-gray-50 rounded-xl p-3 text-center">
+                <div className="text-xl mb-0.5">{s.icon}</div>
+                <div className="text-lg font-extrabold text-gray-900">{s.value}</div>
+                <div className="text-[10px] text-gray-400">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </Modal>
+      )}
+
       {editModal && (
         <Modal title="Cập nhật hồ sơ CLB" onClose={() => setEditModal(false)}>
           <Field label="Tên CLB *"><Input value={form.name ?? ""} onChange={(v) => setForm({ ...form, name: v })} /></Field>
@@ -254,37 +311,39 @@ export default function ClubProfilePage() {
             </div>
           )}
         </Modal>
-      )}
-
-      {/* ── Modal giải đang tham gia ─────────────────────── */}
-      {detailModal === "tournaments" && (
-        <Modal title={`🏆 Giải đang tham gia (${registrations.length})`} onClose={() => setDetailModal(null)}>
-          {registrations.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">Chưa đăng ký giải nào</div>
-          ) : (
-            <div className="flex flex-col gap-3 max-h-[420px] overflow-y-auto">
-              {registrations.map((r) => {
-                const st = REG_STATUS[r.status] ?? { label: r.status, color: "#6B7280", bg: "#F3F4F6" };
-                return (
-                  <div key={r.id} className="border border-gray-200 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-1">
-                     <span className="font-bold text-[14px] text-gray-900">{r.tournamentName}</span>
-                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full" style={{ background: st.bg, color: st.color }}>{st.label}</span>
-                    </div>
-                    <div className="flex gap-3 text-xs text-gray-500 mt-1.5">
-                      {r.homeKitColor && <span>🟥 Áo chính: <b className="text-gray-700">{r.homeKitColor}</b></span>}
-                      {r.awayKitColor && <span>⬜ Áo phụ: <b className="text-gray-700">{r.awayKitColor}</b></span>}
-                    </div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      Đăng ký: {r.appliedAt ? new Date(r.appliedAt).toLocaleDateString("vi-VN") : "—"}
-                    </div>
-                  </div>
-                );
-              })}
+      )}{/* ── Modal giải đang tham gia ─────────────────────── */}
+{detailModal === "tournaments" && (
+  <Modal title={`🏆 Lịch sử giải đấu (${tournamentHistory.length})`} onClose={() => setDetailModal(null)}>
+    {tournamentHistory.length === 0 ? (
+      <div className="text-center py-8 text-gray-500">Chưa đăng ký giải nào</div>
+    ) : (
+      <div className="flex flex-col gap-3 max-h-[420px] overflow-y-auto">
+        {tournamentHistory.map((r) => {
+          const st = REG_STATUS[r.registrationStatus] ?? { label: r.registrationStatus, color: "#6B7280", bg: "#F3F4F6" };
+          return (
+            <div key={r.tournamentId} className="border border-gray-200 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-bold text-[14px] text-gray-900">{r.tournamentName}</span>
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full" style={{ background: st.bg, color: st.color }}>{st.label}</span>
+              </div>
+              {/* Thêm thống kê kết quả */}
+              {r.matchesPlayed > 0 && (
+                <div className="flex gap-3 text-xs mt-2 text-gray-600">
+                  <span>🎮 <b>{r.matchesPlayed}</b> trận</span>
+                  <span>✅ <b className="text-emerald-600">{r.matchesWon}</b> thắng</span>
+                  <span>🤝 <b>{r.matchesDrawn}</b> hòa</span>
+                  <span>❌ <b className="text-red-500">{r.matchesLost}</b> thua</span>
+                  <span>🏅 <b>{r.totalPoints}</b> điểm</span>
+                  {r.ranking && <span>📊 Hạng <b className="text-emerald-600">#{r.ranking}</b></span>}
+                </div>
+              )}
             </div>
-          )}
-        </Modal>
-      )}
+          );
+        })}
+      </div>
+    )}
+  </Modal>
+)}
 
       {/* ── Modal kỷ luật ────────────────────────────────── */}
       {detailModal === "disciplines" && (
