@@ -1,14 +1,20 @@
 import { Button, Input } from 'antd';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { PlusOutlined, SearchOutlined,ExclamationCircleFilled } from '@ant-design/icons';
 import { useTournaments } from '../../hooks/useTournaments';
 import TournamentTable from '../../components/TournamentTable';
 import AddTournamentModal from '../../components/AddTournamentModal';
+import UpdateTournamentModal from '../../components/UpdateTournamentModal';
 import { useState } from 'react';
 
 const TournamentListPage = () => {
- const { data, loading, total, queryParams, setQueryParams } = useTournaments();
+ const { data, loading, total, queryParams, setQueryParams} = useTournaments();
  // Xử lý khi đổi trang hoặc đổi size
  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+ const [isEditOpen, setIsEditOpen] = useState(false);
+ const [selectedTourId, setSelectedTourId] = useState<number | null>(null);
+
+// Khai báo state để lưu ID của giải đấu đang được chọn để sửa
+
 
   const handleTableChange = (pagination: any) => {
     setQueryParams(prev => ({
@@ -58,16 +64,31 @@ const TournamentListPage = () => {
         <TournamentTable 
           data={data} 
           loading={loading} 
+          onEdit={(id: number) => { // ✨ Thêm prop này
+          setSelectedTourId(id);
+         setIsEditOpen(true);
+           }}
           pagination={{
             current: queryParams.page + 1,
             pageSize: queryParams.size,
             total: total,
             showSizeChanger: true,
             pageSizeOptions: ['5', '10', '20'],
-            showTotal: (total: number) => `Tổng cộng ${total} giải đấu`
+            showTotal: (total: number) => `Tổng cộng ${total} giải đấu`,
           }}
           onChange={handleTableChange}
+            onRefresh={handleRefresh} // Truyền hàm load lại dữ liệu
         />
+        {/* Modal Cập nhật */}
+<UpdateTournamentModal 
+        isOpen={isEditOpen}
+        tournamentId={selectedTourId}
+        onClose={() => {
+          setIsEditOpen(false);
+          setSelectedTourId(null);
+        }}
+        onRefresh={handleRefresh} // Truyền hàm load lại dữ liệu
+      />
       </div>
     </div>
   );;

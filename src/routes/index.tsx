@@ -81,6 +81,11 @@ export const router = createBrowserRouter([
         ],
     },
 
+    // Dành riêng cho Ban Tổ Chức (Organizer)
+
+    // Dành riêng cho Câu lạc bộ (Club)
+    
+
     // Dành riêng cho Trọng tài (Referee)
     {
         element: <ProtectedRoute allowedRoles={["ROLE_REFEREE"]} />,
@@ -107,6 +112,7 @@ export const router = createBrowserRouter([
                     { path: "/club/members", element: <MembersPage /> },
                     { path: "/club/matches", element: <MatchesPage /> },
                     { path: "/club/tournaments", element: <TournamentsPage /> },
+                    { path: "/club/roster", element: <RosterPage /> },
                 ],
             },
         ],
