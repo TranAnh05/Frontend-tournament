@@ -15,12 +15,10 @@ import MatchesPage from "@/features/club/pages/Matchespage ";
 import TournamentsPage from "@/features/club/pages/Tournamentspage";
 import OrganizersManagementPage from "@/features/admin/pages/OrganizersManagementPage";
 import AdminDashboardPage from "@/features/admin/pages/AdminDashboardPage";
+import RosterPage from "@/features/club/pages/RosterPage";
+import RefereeAssignedMatchesPage from "@/features/referee/pages/RefereeAssignedMatchesPage";
+import RefereeMatchActionPage from "@/features/referee/pages/RefereeMatchActionPage";
 
-const RefereeDashboard = () => (
-    <div className="p-10">
-        <h1>Dashboard Trọng Tài</h1>
-    </div>
-);
 const AthleteDashboard = () => (
     <div className="p-10">
         <h1>Dashboard Vận Động Viên</h1>
@@ -75,21 +73,17 @@ export const router = createBrowserRouter([
                     {
                         path: "venues",
                         element: <VenuesManagementPage />,
-                    }
+                    },
                 ],
             },
         ],
     },
-
-    // Dành riêng cho Ban Tổ Chức (Organizer)
-
-    // Dành riêng cho Câu lạc bộ (Club)
-    
-
-    // Dành riêng cho Trọng tài (Referee)
     {
         element: <ProtectedRoute allowedRoles={["ROLE_REFEREE"]} />,
-        children: [{ path: "/referee", element: <RefereeDashboard /> }],
+        children: [
+            { path: "/referee", element: <RefereeAssignedMatchesPage /> },
+            {path: "/referee/:matchId", element: <RefereeMatchActionPage />}
+        ],
     },
 
     {

@@ -1,5 +1,12 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Trophy, Users, MapPin, LogOut } from "lucide-react";
+import {
+    LayoutDashboard,
+    Trophy,
+    Users,
+    MapPin,
+    LogOut,
+    User,
+} from "lucide-react";
 import { cn } from "@/utils/classNames";
 import { Button } from "@/components/ui/Button";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
@@ -15,12 +22,22 @@ const menuItems = [
 export const AdminSidebar = () => {
     const { pathname } = useLocation();
     const navigate = useNavigate();
-    const logout = useAuthStore((s) => s.logout);
+    const { user, logout } = useAuthStore();
 
     const handleLogout = () => {
-      logout();
-      toast.success("Đăng xuất thành công", { autoClose: 1000 });
-      navigate("/login");
+        logout();
+        toast.success("Đăng xuất thành công", { autoClose: 1000 });
+        navigate("/login");
+    };
+
+    const getLastNameInitial = (fullName?: string | null): string => {
+        if (!fullName || fullName.trim() === "") {
+            return "";
+        }
+
+        const words = fullName.trim().split(" ");
+        const lastName = words[words.length - 1];
+        return lastName.charAt(0).toUpperCase();
     };
 
     return (
@@ -59,7 +76,25 @@ export const AdminSidebar = () => {
                 })}
             </nav>
 
-            <div className="p-4 border-t border-gray-800">
+            <div className="p-4 border-t border-gray-800 bg-gray-900/50">
+                <div className="flex items-center gap-3 mb-4 px-2">
+                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold shadow-sm shrink-0 border border-blue-500">
+                        {user?.fullName ? (
+                            getLastNameInitial(user.fullName)
+                        ) : (
+                            <User size={18} />
+                        )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-100 truncate">
+                            {user?.fullName || "Quản trị viên"}
+                        </p>
+                        <p className="text-xs text-gray-400 truncate">
+                            {user?.email || "admin@system.com"}
+                        </p>
+                    </div>
+                </div>
+
                 <Button
                     variant="outline"
                     size="md"
