@@ -14,12 +14,7 @@ import MembersPage from "@/features/club/pages/Memberspage";
 import MatchesPage from "@/features/club/pages/Matchespage ";
 import TournamentsPage from "@/features/club/pages/Tournamentspage";
 import OrganizersManagementPage from "@/features/admin/pages/OrganizersManagementPage";
-
-const AdminDashboard = () => (
-    <div className="p-10">
-        <h1>Dashboard Admin</h1>
-    </div>
-);
+import AdminDashboardPage from "@/features/admin/pages/AdminDashboardPage";
 
 const RefereeDashboard = () => (
     <div className="p-10">
@@ -67,7 +62,7 @@ export const router = createBrowserRouter([
                 children: [
                     {
                         index: true,
-                        element: <AdminDashboard />,
+                        element: <AdminDashboardPage />,
                     },
                     {
                         path: "sports",
