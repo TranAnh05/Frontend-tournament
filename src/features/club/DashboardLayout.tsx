@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
+import { useUiStore } from './store/uiStore';
 
 const NAV_ITEMS: Record<string, { label: string; icon: string; path: string }[]> = {
   ROLE_CLUB_MANAGER: [
@@ -26,6 +27,7 @@ const ROLE_LABELS: Record<string, string> = {
 export default function DashboardLayout() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const { toast, clearToast } = useUiStore();
 
   const userRole = user?.roles?.[0] ?? '';
   const navItems = NAV_ITEMS[userRole] ?? [];
@@ -40,6 +42,19 @@ export default function DashboardLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50">
 
+         {toast && (
+        <div
+          onClick={clearToast}
+          className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-xl shadow-lg text-white text-sm font-semibold cursor-pointer transition-all ${
+            toast.type === "error" ? "bg-red-500" :
+            toast.type === "info"  ? "bg-blue-500" :
+            "bg-green-600"
+          }`}
+        >
+          {toast.type === "success" ? "✅" : toast.type === "error" ? "❌" : "ℹ️"} {toast.message}
+        </div>
+      )}
+
       {/* Sidebar */}
       <aside className="fixed top-0 left-0 bottom-0 w-60 bg-white border-r border-gray-200 flex flex-col z-10">
 
@@ -52,11 +67,11 @@ export default function DashboardLayout() {
             <div className="text-sm font-extrabold text-gray-900 leading-tight">Tournament</div>
             <div className="text-xs text-gray-400">Management</div>
 
-             {userRole === 'ROLE_CLUB_MANAGER' && user?.fullName && (
-      <div className="text-xs text-green-700 font-semibold mt-0.5 truncate max-w-[120px]">
-        👤 {user.fullName}
-      </div>
-    )}
+            {userRole === 'ROLE_CLUB_MANAGER' && user?.fullName && (
+              <div className="text-xs text-green-700 font-semibold mt-0.5 truncate max-w-[120px]">
+                👤 {user.fullName}
+              </div>
+            )}
           </div>
         </div>
 
@@ -71,10 +86,9 @@ export default function DashboardLayout() {
               to={item.path}
               end
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg mb-0.5 text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-green-50 text-green-700 font-bold'
-                    : 'text-gray-700 hover:bg-gray-100'
+                `flex items-center gap-3 px-3 py-2 rounded-lg mb-0.5 text-sm font-medium transition-all ${isActive
+                  ? 'bg-green-50 text-green-700 font-bold'
+                  : 'text-gray-700 hover:bg-gray-100'
                 }`
               }
             >

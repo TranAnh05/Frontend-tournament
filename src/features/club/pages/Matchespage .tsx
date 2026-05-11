@@ -154,7 +154,16 @@ export default function MatchesPage() {
                   <Btn size="sm" variant="outline" onClick={() => openDetail(m)}>📋 Chi tiết</Btn>
                 )}
                 {m.status === "SCHEDULED" && (
-                  <Btn size="sm" variant="primary" onClick={() => openLineup(m)}>📝 Nộp đội hình</Btn>
+                  m.hasLineup ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+                        ✅ Đã nộp đội hình
+                      </span>
+                      <Btn size="sm" variant="outline" onClick={() => openLineup(m)}>✏️ Nộp lại</Btn>
+                    </div>
+                  ) : (
+                    <Btn size="sm" variant="primary" onClick={() => openLineup(m)}>📝 Nộp đội hình</Btn>
+                  )
                 )}
               </div>
             </div>

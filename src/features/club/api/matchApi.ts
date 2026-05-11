@@ -25,6 +25,7 @@ export interface MatchResponse {
   homeScore: number;
   awayScore: number;
   events: MatchEventResponse[];
+  hasLineup?: boolean; // BE trả về nếu CLB đã nộp đội hình
 }
 
 export const matchApi = {

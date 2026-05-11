@@ -62,4 +62,19 @@ export const tournamentApi = {
   withdraw: async (tournamentId: number): Promise<void> => {
     await api.delete(`/tournaments/${tournamentId}/withdraw`);
   },
+
+  submitRoster: async (tournamentId: number, data: {
+    rosters: { athleteId: number; jerseyNumber: number; position: string; role: string }[]
+  }): Promise<void> => {
+    const res = await api.post(`/tournaments/${tournamentId}/roster`, data);
+    const response = res as unknown as ApiResponse<void>;
+    if (response.code !== 200) {
+      throw new Error(response.message || 'Nộp danh sách thất bại');
+    }
+  },
+
+  hasRoster: async (tournamentId: number): Promise<boolean> => {
+    const res = await api.get(`/tournaments/${tournamentId}/roster/status`);
+    return (res as unknown as ApiResponse<boolean>).result ?? false;
+  },
 };
