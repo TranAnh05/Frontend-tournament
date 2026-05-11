@@ -150,6 +150,7 @@ const [selectedId, setSelectedId] = useState<number | null>(null);
       render: (_: any, record: any) => (
         <Space>
           <Button 
+          
   type="text" 
   icon={<EyeOutlined className="text-blue-500" />} 
   onClick={() => navigate(`/organizer/tournaments/${record.id}`)}
