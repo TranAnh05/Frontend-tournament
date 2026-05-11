@@ -90,7 +90,7 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold truncate text-white">Admin User</p>
-            <p className="text-[11px] text-blue-200 truncate">admin@sportevents.vn</p>
+            <p className="text-[11px] text-blue-200 truncate">admin@Orannize.vn</p>
           </div>
         </div>
       </div>
