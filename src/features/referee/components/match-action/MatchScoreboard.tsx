@@ -12,14 +12,14 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({ match }) => {
         switch (match.status) {
             case "IN_PROGRESS":
                 return (
-                    <span className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap text-red-600 bg-red-50 px-3 py-2 rounded-md border border-red-100 shadow-sm"> 
+                    <span className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap text-red-600 bg-red-50 px-3 py-2 rounded-md border border-red-100 shadow-sm">
                         <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
                         ĐANG DIỄN RA
                     </span>
                 );
             case "PAUSED":
                 return (
-                    <span className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap text-yellow-700 bg-yellow-50 px-3 py-2 rounded-md border border-yellow-100 shadow-sm"> 
+                    <span className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap text-yellow-700 bg-yellow-50 px-3 py-2 rounded-md border border-yellow-100 shadow-sm">
                         <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
                         TẠM DỪNG
                     </span>
@@ -54,13 +54,13 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({ match }) => {
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-wider line-clamp-3">
                         {match.tournamentName}
                     </span>
-                    
+ 
                     {renderStatusBadge()}
                 </div>
 
                 {/* Khối tỷ số trung tâm */}
                 <div className="flex items-center justify-between">
-                    {/* Đội Nhà */} 
+                    {/* Đội Nhà */}
                     <div className="flex flex-col items-center w-1/3">
                         <div className="w-10 h-10 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden mb-1">
                             {match.homeTeam.logoUrl ? (
