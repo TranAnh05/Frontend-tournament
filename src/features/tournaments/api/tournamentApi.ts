@@ -30,3 +30,19 @@ export const tournamentApi = {
   startTournament: (id: number) => api.patch(`/tournaments/${id}/start`),
   finishTournament: (id: number) => api.patch(`/tournaments/${id}/finish`),
 };
+export const registrationApi = {
+  // Lấy danh sách giải đang mở đăng ký
+  getOpeningTournaments: () => 
+    api.get('/tournaments/opening'),
+
+  // Lấy danh sách đội đăng ký của 1 giải
+  getRegistrations: (tournamentId: number, params?: any) => 
+    api.get(`/tournaments/${tournamentId}/registrations`, { params }),
+    
+  // (Chuẩn bị sẵn cho bước sau)
+  approveRegistration: (tournamentId: number, regId: number) => 
+    api.patch(`/tournaments/${tournamentId}/registrations/${regId}/approve`),
+    
+  rejectRegistration: (tournamentId: number, regId: number, reason: string) => 
+    api.patch(`/tournaments/${tournamentId}/registrations/${regId}/reject`, { reason }),
+};

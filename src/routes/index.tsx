@@ -20,6 +20,7 @@ import RefereeAssignedMatchesPage from "@/features/referee/pages/RefereeAssigned
 import RefereeMatchActionPage from "@/features/referee/pages/RefereeMatchActionPage";
 import MainLayout from '../features/tournaments/pages/ORGANIZER/MainLayout';
 import DashboardPage from '../features/tournaments/pages/ORGANIZER/DashboardPage';
+import Regis from '../features/tournaments/pages/ORGANIZER/RegistrationPage';
 
 const AthleteDashboard = () => (
     <div className="p-10">
@@ -109,6 +110,10 @@ export const router = createBrowserRouter([
                 path: "/organizer/tournaments/:id",
                 element: <TournamentDetailPage />,
             },
+            {
+                path: "/organizer/registrations",
+                element: <Regis/>,
+            }
              ],
                  },
         ],
