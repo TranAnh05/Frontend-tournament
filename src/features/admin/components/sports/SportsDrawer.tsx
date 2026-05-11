@@ -66,7 +66,7 @@ export const SportsDrawer: React.FC<SportsDrawerProps> = ({
 
             {/* Khung trượt chính */}
             <div
-                className={`fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-gray-50 shadow-2xl transition-transform duration-300 ease-in-out flex flex-col ${
+                className={`fixed inset-y-0 right-0 z-50 w-full max-w-3xl bg-gray-50 shadow-2xl transition-transform duration-300 ease-in-out flex flex-col ${
                     isOpen ? "translate-x-0" : "translate-x-full"
                 }`}
             >
