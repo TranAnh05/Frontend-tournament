@@ -18,6 +18,8 @@ import AdminDashboardPage from "@/features/admin/pages/AdminDashboardPage";
 import RosterPage from "@/features/club/pages/RosterPage";
 import RefereeAssignedMatchesPage from "@/features/referee/pages/RefereeAssignedMatchesPage";
 import RefereeMatchActionPage from "@/features/referee/pages/RefereeMatchActionPage";
+import MainLayout from '../features/tournaments/pages/ORGANIZER/MainLayout';
+import DashboardPage from '../features/tournaments/pages/ORGANIZER/DashboardPage';
 
 const AthleteDashboard = () => (
     <div className="p-10">
@@ -89,11 +91,26 @@ export const router = createBrowserRouter([
     {
         element: <ProtectedRoute allowedRoles={["ROLE_ORGANIZER"]} />,
         children: [
-            { path: "/organizer", element: <TournamentListPage /> },
+            { path: "/organizer", element: <MainLayout />,
+            children: [
+                {
+                  
+                    index: true, 
+                    element: <DashboardPage /> 
+                },
+            
+            {
+                path: "tournaments",
+                element: <TournamentListPage /> ,
+                children: [ 
+                   ],
+            },
             {
                 path: "/organizer/tournaments/:id",
                 element: <TournamentDetailPage />,
             },
+             ],
+                 },
         ],
     },
     {

@@ -4,7 +4,9 @@ import { useTournaments } from '../../hooks/useTournaments';
 import TournamentTable from '../../components/TournamentTable';
 import AddTournamentModal from '../../components/AddTournamentModal';
 import UpdateTournamentModal from '../../components/UpdateTournamentModal';
-import { useState } from 'react';
+import { useState , useEffect } from 'react';
+
+
 
 const TournamentListPage = () => {
  const { data, loading, total, queryParams, setQueryParams} = useTournaments();
@@ -14,7 +16,17 @@ const TournamentListPage = () => {
  const [selectedTourId, setSelectedTourId] = useState<number | null>(null);
 
 // Khai báo state để lưu ID của giải đấu đang được chọn để sửa
-
+useEffect(() => {
+    const handleOpenModal = () => setIsAddModalOpen(true);
+    
+    // Bật máy nghe
+    window.addEventListener('open-add-tournament', handleOpenModal);
+    
+    // Tắt máy nghe khi chuyển sang trang khác (Cleanup function)
+    return () => {
+      window.removeEventListener('open-add-tournament', handleOpenModal);
+    };
+  }, []);
 
   const handleTableChange = (pagination: any) => {
     setQueryParams(prev => ({
