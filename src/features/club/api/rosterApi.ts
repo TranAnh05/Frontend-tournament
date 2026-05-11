@@ -25,11 +25,11 @@ export interface RosterPlayerRequest {
 }
 
 export const rosterApi = {
-  getMyRoster: (tournamentId: number) =>
-    api.get<{ result: RosterResponse }>(`/clubs/tournaments/${tournamentId}/roster`)
-       .then(r => r.data.result),
+ getMyRoster: (tournamentId: number) =>
+  api.get(`/clubs/tournaments/${tournamentId}/roster`)
+     .then((r: any) => r.result as RosterResponse),
 
-  submitRoster: (tournamentId: number, players: RosterPlayerRequest[]) =>
-    api.post<{ result: RosterResponse }>(`/clubs/tournaments/${tournamentId}/roster`, { players })
-       .then(r => r.data.result),
+submitRoster: (tournamentId: number, players: RosterPlayerRequest[]) =>
+  api.post(`/clubs/tournaments/${tournamentId}/roster`, { players })
+     .then((r: any) => r.result as RosterResponse),
 };
