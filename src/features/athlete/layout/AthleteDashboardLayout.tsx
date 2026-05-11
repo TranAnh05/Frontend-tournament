@@ -4,6 +4,7 @@ import { useAuthStore } from '@/features/auth/store/useAuthStore';
 const NAV = [
   { label: 'Danh sách CLB',   icon: '🏟️', path: '/athlete/clubs' },
   { label: 'Đơn ứng tuyển',   icon: '📋', path: '/athlete/applications' },
+  { label: 'Hồ sơ của tôi',   icon: '👤', path: '/athlete/profile' },
 ];
 
 export default function AthleteDashboardLayout() {
