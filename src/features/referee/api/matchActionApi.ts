@@ -1,6 +1,7 @@
 import api from "@/services/api";
 import { type ApiResponse } from "@/types/api";
 import {
+    type ChangeMatchStatusRequest,
     type ConfirmLineupRequest,
     type MatchDetailResponse,
 } from "../types/matchAction";
@@ -17,5 +18,12 @@ export const matchActionApi = {
         data: ConfirmLineupRequest,
     ): Promise<ApiResponse<string>> => {
         return api.patch(`/referee/matches/${matchId}/lineup-confirm`, data);
+    },
+
+    changeMatchStatus: (
+        matchId: number,
+        data: ChangeMatchStatusRequest,
+    ): Promise<ApiResponse<string>> => {
+        return api.patch(`/referee/matches/${matchId}/status`, data);
     },
 };

@@ -33,3 +33,8 @@ export interface MatchDetailResponse {
 export interface ConfirmLineupRequest {
   lineupIds: number[];
 }
+
+export interface ChangeMatchStatusRequest {
+  targetStatus: 'IN_PROGRESS' | 'PAUSED' | 'FINISHED' | 'CANCELED';
+  note?: string; 
+}
