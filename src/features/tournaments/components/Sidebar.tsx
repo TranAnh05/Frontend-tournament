@@ -47,7 +47,7 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
           <Trophy className="w-8 h-8 text-white" />
         </div>
         <div>
-          <h1 className="text-xl font-bold tracking-tight">SportEvents</h1>
+          <h1 className="text-xl font-bold tracking-tight">Tournament</h1>
           <p className="text-[10px] text-blue-200 uppercase tracking-widest">Quản lý giải đấu</p>
         </div>
       </div>

@@ -20,6 +20,7 @@ import RefereeAssignedMatchesPage from "@/features/referee/pages/RefereeAssigned
 import RefereeMatchActionPage from "@/features/referee/pages/RefereeMatchActionPage";
 import MainLayout from '../features/tournaments/pages/ORGANIZER/MainLayout';
 import DashboardPage from '../features/tournaments/pages/ORGANIZER/DashboardPage';
+import Regis from '../features/tournaments/pages/ORGANIZER/RegistrationPage';
 
 import AthleteDashboardLayout from '@/features/athlete/layout/AthleteDashboardLayout';
 import ClubListPage from '@/features/athlete/pages/ClubListPage';
@@ -114,6 +115,10 @@ export const router = createBrowserRouter([
                 path: "/organizer/tournaments/:id",
                 element: <TournamentDetailPage />,
             },
+            {
+                path: "/organizer/registrations",
+                element: <Regis/>,
+            }
              ],
                  },
         ],
