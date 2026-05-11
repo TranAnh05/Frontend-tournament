@@ -8,6 +8,43 @@ interface MatchScoreboardProps {
 
 export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({ match }) => {
     const isLive = match.status === "IN_PROGRESS";
+    const renderStatusBadge = () => {
+        switch (match.status) {
+            case "IN_PROGRESS":
+                return (
+                    <span className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap text-red-600 bg-red-50 px-3 py-2 rounded-md border border-red-100 shadow-sm"> 
+                        <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
+                        ĐANG DIỄN RA
+                    </span>
+                );
+            case "PAUSED":
+                return (
+                    <span className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap text-yellow-700 bg-yellow-50 px-3 py-2 rounded-md border border-yellow-100 shadow-sm"> 
+                        <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                        TẠM DỪNG
+                    </span>
+                );
+            case "FINISHED":
+                return (
+                    <span className="text-xs font-bold text-white bg-slate-600 px-3 py-2 rounded-md whitespace-nowrap shadow-sm">
+                        ĐÃ KẾT THÚC
+                    </span>
+                );
+            case "CANCELED":
+                return (
+                    <span className="text-xs font-bold text-gray-600 bg-gray-200 px-3 py-2 rounded-md whitespace-nowrap shadow-sm">
+                        ĐÃ HỦY
+                    </span>
+                );
+            case "SCHEDULED":
+            default:
+                return (
+                    <span className="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-2 rounded-md whitespace-nowrap">
+                        CHƯA BẮT ĐẦU
+                    </span>
+                );
+        }
+    };
 
     return (
         <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-20">
@@ -17,16 +54,8 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({ match }) => {
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-wider line-clamp-3">
                         {match.tournamentName}
                     </span>
-                    {isLive ? (
-                        <span className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap text-red-600 bg-red-50 px-3 py-2 rounded-md animate-pulse"> 
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
-                            ĐANG ĐÁ
-                        </span>
-                    ) : (
-                        <span className="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-2 rounded-md whitespace-nowrap">
-                            CHƯA BẮT ĐẦU
-                        </span>
-                    )}
+                    
+                    {renderStatusBadge()}
                 </div>
 
                 {/* Khối tỷ số trung tâm */}
