@@ -19,6 +19,11 @@ import RosterPage from "@/features/club/pages/RosterPage";
 import RefereeAssignedMatchesPage from "@/features/referee/pages/RefereeAssignedMatchesPage";
 import RefereeMatchActionPage from "@/features/referee/pages/RefereeMatchActionPage";
 
+import AthleteDashboardLayout from '@/features/athlete/layout/AthleteDashboardLayout';
+import ClubListPage from '@/features/athlete/pages/ClubListPage';
+import ApplicationsPage from '@/features/athlete/pages/ApplicationsPage';
+
+
 const AthleteDashboard = () => (
     <div className="p-10">
         <h1>Dashboard Vận Động Viên</h1>
@@ -113,9 +118,16 @@ export const router = createBrowserRouter([
     },
     // Dành riêng cho Vận động viên (Athlete)
     {
-        element: <ProtectedRoute allowedRoles={["ROLE_ATHLETE"]} />,
-        children: [{ path: "/athlete", element: <AthleteDashboard /> }],
-    },
+    element: <ProtectedRoute allowedRoles={['ROLE_ATHLETE']} />,
+    children: [{
+      element: <AthleteDashboardLayout />,
+      children: [
+        { path: '/athlete',              element: <Navigate to="/athlete/clubs" replace /> },
+        { path: '/athlete/clubs',        element: <ClubListPage /> },
+        { path: '/athlete/applications', element: <ApplicationsPage /> },
+      ],
+    }],
+  },
 
     // --- ĐIỀU HƯỚNG MẶC ĐỊNH ---
     {
