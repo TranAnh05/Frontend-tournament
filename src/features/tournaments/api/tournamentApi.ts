@@ -24,5 +24,9 @@ export const tournamentApi = {
   // Xóa giải đấu
   deleteTournament: (id: number) => {
     return api.delete(`/tournaments/${id}`);
-  }
+  },
+  toggleRegistration: (id: number) => api.patch(`/tournaments/${id}/registration`),
+
+  startTournament: (id: number) => api.patch(`/tournaments/${id}/start`),
+  finishTournament: (id: number) => api.patch(`/tournaments/${id}/finish`),
 };
