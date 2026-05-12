@@ -25,6 +25,8 @@ import Regis from '../features/tournaments/pages/ORGANIZER/RegistrationPage';
 import AthleteDashboardLayout from '@/features/athlete/layout/AthleteDashboardLayout';
 import ClubListPage from '@/features/athlete/pages/ClubListPage';
 import ApplicationsPage from '@/features/athlete/pages/ApplicationsPage';
+import ProfilePage from '@/features/athlete/pages/ProfilePage';
+import AthleteRegisterPage from '@/features/athlete/pages/AthleteRegisterPage';
 
 
 const AthleteDashboard = () => (
@@ -52,6 +54,10 @@ export const router = createBrowserRouter([
         path: "/register",
         element: <RegisterPage />,
     },
+    {
+    path: "/athlete/register",        // ← THÊM
+    element: <AthleteRegisterPage />, // ← THÊM
+},
     {
         path: "/unauthorized",
         element: <Unauthorized />,
@@ -147,6 +153,7 @@ export const router = createBrowserRouter([
         { path: '/athlete',              element: <Navigate to="/athlete/clubs" replace /> },
         { path: '/athlete/clubs',        element: <ClubListPage /> },
         { path: '/athlete/applications', element: <ApplicationsPage /> },
+        { path: '/athlete/profile', element: <ProfilePage /> },
       ],
     }],
   },

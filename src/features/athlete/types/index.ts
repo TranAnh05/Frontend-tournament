@@ -40,3 +40,37 @@ export interface AthleteApplicationResponse {
 export interface ApplyToClubRequest {
   clubId: number;
 }
+
+export interface AthleteProfileResponse {
+  athleteId: number;
+  fullName: string;
+  email: string;
+  phoneNumber: string | null;
+  avatarUrl: string | null;
+  identityNumber: string;
+  dateOfBirth: string; // "YYYY-MM-DD"
+  portraitUrl: string | null;
+  preferredNumber: number | null;
+  preferredPosition: string | null;
+  healthStatus: 'FIT' | 'INJURED';
+  currentClubName: string | null;
+}
+
+export interface UpdateAthleteProfileRequest {
+  fullName?: string;
+  phoneNumber?: string;
+  identityNumber?: string;
+  dateOfBirth?: string; // "YYYY-MM-DD"
+  preferredPosition?: string;
+  preferredNumber?: number;
+  portraitUrl?: string;
+}
+
+export interface AthleteRegisterRequest {
+  fullName: string;
+  email: string;
+  password: string;
+  phoneNumber: string;
+  identityNumber: string;
+  dateOfBirth: string; // "YYYY-MM-DD"
+}
