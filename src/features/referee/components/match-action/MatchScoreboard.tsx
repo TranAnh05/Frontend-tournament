@@ -4,19 +4,42 @@ import { Clock, Shield } from "lucide-react";
 
 interface MatchScoreboardProps {
     match: MatchDetailResponse;
+    timer: any; 
 }
 
-export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({ match }) => {
+export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
+    match,
+    timer,
+}) => {
+    const { displayTime, periodName, currentPeriod, matchState } = timer;
     const isLive = match.status === "IN_PROGRESS";
+
     const renderStatusBadge = () => {
-        switch (match.status) {
-            case "IN_PROGRESS":
+        if (match.status === "IN_PROGRESS") {
+            if (matchState === "WAITING_START") {
                 return (
-                    <span className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap text-red-600 bg-red-50 px-3 py-2 rounded-md border border-red-100 shadow-sm">
-                        <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
-                        ĐANG DIỄN RA
+                    <span className="text-xs font-bold whitespace-nowrap text-orange-600 bg-orange-50 px-3 py-2 rounded-md border border-orange-100 shadow-sm">
+                        CHỜ BẮT ĐẦU {periodName.toUpperCase()} {currentPeriod}
                     </span>
                 );
+            }
+            if (matchState === "HALFTIME") {
+                return (
+                    <span className="text-xs font-bold whitespace-nowrap text-blue-600 bg-blue-50 px-3 py-2 rounded-md border border-blue-100 shadow-sm">
+                        NGHỈ GIỮA {periodName.toUpperCase()}
+                    </span>
+                );
+            }
+            
+            return (
+                <span className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap text-red-600 bg-red-50 px-3 py-2 rounded-md border border-red-100 shadow-sm">
+                    <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
+                    ĐANG DIỄN RA
+                </span>
+            );
+        }
+
+        switch (match.status) {
             case "PAUSED":
                 return (
                     <span className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap text-yellow-700 bg-yellow-50 px-3 py-2 rounded-md border border-yellow-100 shadow-sm">
@@ -54,7 +77,7 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({ match }) => {
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-wider line-clamp-3">
                         {match.tournamentName}
                     </span>
- 
+
                     {renderStatusBadge()}
                 </div>
 
@@ -84,7 +107,18 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({ match }) => {
                             {match.homeTeam.currentScore} -{" "}
                             {match.awayTeam.currentScore}
                         </div>
-                        {!isLive && (
+                        
+                        <div className="bg-gray-900 text-white px-3 py-1 rounded-md flex flex-col items-center shadow-inner">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-0.5">
+                                {periodName} {currentPeriod}
+                            </span>
+                            <span className="font-mono text-lg font-black leading-none">
+                                {displayTime}
+                            </span>
+                        </div>
+
+                        {/* Chỉ hiện giờ dự kiến khi trận đấu chưa bắt đầu */}
+                        {!isLive && match.status === "SCHEDULED" && (
                             <span className="text-xs font-medium text-gray-500 mt-1 flex items-center gap-1">
                                 <Clock size={12} />
                                 {new Date(
