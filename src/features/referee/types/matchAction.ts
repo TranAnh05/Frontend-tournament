@@ -24,7 +24,13 @@ export interface MatchDetailResponse {
     sportName: string;
     scheduledTime: string;
     location: string;
-    status: "SCHEDULED" | "IN_PROGRESS" | "PAUSED" | "FINISHED" | "CANCELED";
+    status:
+        | "SCHEDULED"
+        | "IN_PROGRESS"
+        | "PAUSED"
+        | "FINISHED"
+        | "CANCELED"
+        | "FINALIZED";
     sportRules: Record<string, string>;
     homeTeam: TeamLineupDto;
     awayTeam: TeamLineupDto;
@@ -61,4 +67,8 @@ export interface CreateMatchEventRequest {
     primaryAthleteId?: number | null;
     secondaryAthleteId?: number | null;
     description?: string;
+}
+
+export interface FinalizeMatchRequest {
+    note?: string;
 }

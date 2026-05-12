@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Play, Square, Pause, CheckCircle, XCircle } from "lucide-react";
+import { Play, Square, Pause, CheckCircle, XCircle, Lock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { MatchConfirmationModal } from "./MatchConfirmationModal";
 
@@ -17,6 +17,7 @@ interface MatchControlFooterProps {
     canStartMatch: boolean;
     onConfirmLineup: () => void;
     onChangeStatus: (targetStatus: string, note?: string) => void;
+    onFinalizeMatch: (note: string) => void;
 }
 
 export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
@@ -28,6 +29,7 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
     canStartMatch,
     onConfirmLineup,
     onChangeStatus,
+    onFinalizeMatch,
 }) => {
     const isPaused = status === "PAUSED";
 
@@ -47,7 +49,8 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
         description: string;
         confirmText: string;
         variant: "danger" | "primary";
-        requireInput: boolean;
+        showInput: boolean;
+        isInputRequired: boolean;
         inputPlaceholder: string;
     }>({
         isOpen: false,
@@ -56,11 +59,12 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
         description: "",
         confirmText: "",
         variant: "primary",
-        requireInput: false,
+        showInput: false,
+        isInputRequired: false,
         inputPlaceholder: "",
     });
 
-    const openModal = (type: "FINISHED" | "CANCELED") => {
+    const openModal = (type: "FINISHED" | "CANCELED" | "FINALIZE") => {
         if (type === "CANCELED") {
             setModalConfig({
                 isOpen: true,
@@ -70,9 +74,23 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
                     "Hành động này không thể hoàn tác. Trận đấu sẽ bị hủy.",
                 confirmText: "Xác nhận Hủy",
                 variant: "danger",
-                requireInput: true,
+                showInput: true, 
+                isInputRequired: true, 
                 inputPlaceholder:
                     "Ví dụ: Mưa bão lớn, Vận động viên gặp sự cố, Lỗi kỹ thuật sân bãi...",
+            });
+        } else if (type === "FINALIZE") {
+            setModalConfig({
+                isOpen: true,
+                targetStatus: "FINALIZE",
+                title: "Ký duyệt biên bản?",
+                description:
+                    "Hành động này không thể hoàn tác. Mọi dữ liệu sẽ bị khóa vĩnh viễn để tính Bảng xếp hạng!",
+                confirmText: "Chốt sổ & Ký duyệt",
+                variant: "danger",
+                showInput: true, 
+                isInputRequired: false, 
+                inputPlaceholder: "Ghi chú cuối cùng của Trọng tài (không bắt buộc)...",
             });
         } else {
             setModalConfig({
@@ -83,7 +101,8 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
                     "Xác nhận kết thúc trận đấu và chốt tỷ số chung cuộc.",
                 confirmText: "Kết thúc ngay",
                 variant: "primary",
-                requireInput: false, 
+                showInput: false, 
+                isInputRequired: false,
                 inputPlaceholder: "",
             });
         }
@@ -93,6 +112,12 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
         setModalConfig((prev) => ({ ...prev, isOpen: false }));
 
     const handleConfirmModal = (inputNote?: string) => {
+        if (modalConfig.targetStatus === "FINALIZE") {
+            onFinalizeMatch(inputNote || "");
+            closeModal();
+            return;
+        }
+
         const finalNote =
             modalConfig.targetStatus === "CANCELED"
                 ? `Lý do hủy: ${inputNote}`
@@ -159,7 +184,6 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
                     {(status === "IN_PROGRESS" || status === "PAUSED") && (
                         <div className="flex flex-col gap-3 animate-in slide-in-from-bottom-4 duration-300">
                             <div className="flex gap-3">
-                                {/* NÚT TẠM DỪNG: Bị khóa nếu chưa bấm "Bắt đầu hiệp 1" hoặc đang nghỉ giải lao */}
                                 <Button
                                     disabled={isPauseDisabled}
                                     onClick={() =>
@@ -183,7 +207,6 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
                                     {isPaused ? "TIẾP TỤC" : "TẠM DỪNG"}
                                 </Button>
 
-                                {/* NÚT HỦY TRẬN: Vẫn mở để phòng sự cố */}
                                 <Button
                                     onClick={() => openModal("CANCELED")}
                                     disabled={isStatusChanging}
@@ -194,7 +217,6 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
                                 </Button>
                             </div>
 
-                            {/* NÚT KẾT THÚC: Bị khóa nếu chưa từng bấm "Bắt đầu hiệp 1" */}
                             <Button
                                 onClick={() => openModal("FINISHED")}
                                 disabled={isWaitingStart || isStatusChanging}
@@ -213,15 +235,34 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
                         </div>
                     )}
 
-                    {/* TRẠNG THÁI 3: ĐÃ KẾT THÚC HOẶC HỦY */}
-                    {(status === "FINISHED" || status === "CANCELED") && (
+                    {/* TRẠNG THÁI 3: CÁC LOẠI KẾT THÚC */}
+                    {status === "FINISHED" && (
+                        <Button
+                            onClick={() => openModal("FINALIZE")}
+                            disabled={isStatusChanging}
+                            className="w-full py-5 text-lg font-bold text-white bg-slate-800 hover:bg-slate-900 shadow-lg shadow-slate-300 rounded-2xl animate-in slide-in-from-bottom-2"
+                        >
+                            <Lock size={20} className="mr-2" />
+                            📝 KÝ DUYỆT BIÊN BẢN
+                        </Button>
+                    )}
+
+                    {status === "FINALIZED" && (
                         <Button
                             disabled
                             className="w-full py-5 text-lg font-bold bg-gray-100 text-gray-400 border border-gray-200 rounded-2xl cursor-not-allowed"
                         >
-                            {status === "FINISHED"
-                                ? "TRẬN ĐẤU ĐÃ KẾT THÚC"
-                                : "TRẬN ĐẤU ĐÃ BỊ HỦY"}
+                            <Lock size={20} className="mr-2" />
+                            TRẬN ĐẤU ĐÃ BỊ KHÓA
+                        </Button>
+                    )}
+
+                    {status === "CANCELED" && (
+                        <Button
+                            disabled
+                            className="w-full py-5 text-lg font-bold bg-gray-100 text-gray-400 border border-gray-200 rounded-2xl cursor-not-allowed"
+                        >
+                            TRẬN ĐẤU ĐÃ BỊ HỦY
                         </Button>
                     )}
                 </div>
@@ -236,7 +277,8 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
                 confirmText={modalConfig.confirmText}
                 confirmVariant={modalConfig.variant}
                 isLoading={isStatusChanging}
-                requireInput={modalConfig.requireInput}
+                showInput={modalConfig.showInput}
+                isInputRequired={modalConfig.isInputRequired}
                 inputPlaceholder={modalConfig.inputPlaceholder}
             />
         </>

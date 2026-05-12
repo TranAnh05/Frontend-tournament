@@ -1,10 +1,10 @@
 import React from "react";
 import { type MatchDetailResponse } from "../../types/matchAction";
-import { Clock, Shield } from "lucide-react";
+import { Clock, Shield, Lock } from "lucide-react";
 
 interface MatchScoreboardProps {
     match: MatchDetailResponse;
-    timer: any; 
+    timer: any;
 }
 
 export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
@@ -30,7 +30,7 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
                     </span>
                 );
             }
-            
+
             return (
                 <span className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap text-red-600 bg-red-50 px-3 py-2 rounded-md border border-red-100 shadow-sm">
                     <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
@@ -40,6 +40,13 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
         }
 
         switch (match.status) {
+            case "FINALIZED":
+                return (
+                    <span className="flex items-center gap-1.5 text-xs font-bold text-white bg-slate-800 px-3 py-2 rounded-md whitespace-nowrap shadow-md">
+                        <Lock size={12} />
+                        ĐÃ CHỐT SỔ
+                    </span>
+                );
             case "PAUSED":
                 return (
                     <span className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap text-yellow-700 bg-yellow-50 px-3 py-2 rounded-md border border-yellow-100 shadow-sm">
@@ -50,7 +57,7 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
             case "FINISHED":
                 return (
                     <span className="text-xs font-bold text-white bg-slate-600 px-3 py-2 rounded-md whitespace-nowrap shadow-sm">
-                        ĐÃ KẾT THÚC
+                        CHỜ KÝ DUYỆT
                     </span>
                 );
             case "CANCELED":
@@ -107,7 +114,7 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
                             {match.homeTeam.currentScore} -{" "}
                             {match.awayTeam.currentScore}
                         </div>
-                        
+
                         <div className="bg-gray-900 text-white px-3 py-1 rounded-md flex flex-col items-center shadow-inner">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-0.5">
                                 {periodName} {currentPeriod}

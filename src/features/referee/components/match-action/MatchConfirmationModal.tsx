@@ -14,7 +14,8 @@ interface ConfirmationModalProps {
     confirmVariant?: "danger" | "primary" | "success";
     isLoading?: boolean;
 
-    requireInput?: boolean;
+    showInput?: boolean;
+    isInputRequired?: boolean;
     inputPlaceholder?: string;
 }
 
@@ -27,7 +28,8 @@ export const MatchConfirmationModal: React.FC<ConfirmationModalProps> = ({
     confirmText,
     confirmVariant = "primary",
     isLoading = false,
-    requireInput = false,
+    showInput = false,
+    isInputRequired = false,
     inputPlaceholder = "Nhập nội dung...",
 }) => {
     const [inputValue, setInputValue] = useState("");
@@ -41,7 +43,7 @@ export const MatchConfirmationModal: React.FC<ConfirmationModalProps> = ({
     if (!isOpen) return null;
 
     const isConfirmDisabled =
-        isLoading || (requireInput && inputValue.trim() === "");
+        isLoading || (isInputRequired && inputValue.trim() === "");
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -78,8 +80,8 @@ export const MatchConfirmationModal: React.FC<ConfirmationModalProps> = ({
                         {description}
                     </p>
 
-                    {requireInput && (
-                        <div className="mt-2">
+                    {showInput && (
+                        <div className="mt-2 text-left w-full">
                             <textarea
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
@@ -87,9 +89,10 @@ export const MatchConfirmationModal: React.FC<ConfirmationModalProps> = ({
                                 rows={3}
                                 className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all resize-none text-sm"
                             />
-                            {inputValue.trim() === "" && (
+                            {/* Chữ đỏ chỉ hiện khi bắt buộc nhập mà người dùng để trống */}
+                            {isInputRequired && inputValue.trim() === "" && (
                                 <p className="text-xs text-red-500 mt-2 font-medium">
-                                    * Bắt buộc nhập lý do hủy trận
+                                    * Bắt buộc nhập thông tin
                                 </p>
                             )}
                         </div>
