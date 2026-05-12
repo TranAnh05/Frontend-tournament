@@ -28,10 +28,26 @@ export function useApplications() {
     }
   };
 
-  // VĐV đang PENDING hoặc APPROVED ở CLB nào đó chưa
-  const hasActiveApplication = applications.some(
-    a => a.joinStatus === 'PENDING' || a.joinStatus === 'APPROVED'
+  // Đang chờ duyệt → hiện warning + disable nút
+  const hasPendingApplication = applications.some(
+    a => a.joinStatus === 'PENDING'
   );
 
-  return { applications, loading, applying, applyToClub, hasActiveApplication };
+  // Đã là thành viên CLB → chỉ disable nút, không hiện warning
+  const isApprovedMember = applications.some(
+    a => a.joinStatus === 'APPROVED'
+  );
+
+  // Disable nút ứng tuyển khi đang PENDING hoặc đã APPROVED
+  const hasActiveApplication = hasPendingApplication || isApprovedMember;
+
+  return {
+    applications,
+    loading,
+    applying,
+    applyToClub,
+    hasActiveApplication,
+    hasPendingApplication,
+    isApprovedMember,
+  };
 }
