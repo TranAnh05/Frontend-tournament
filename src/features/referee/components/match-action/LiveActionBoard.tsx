@@ -17,6 +17,7 @@ import {
     PauseCircle,
     ArrowDownRight,
     ArrowUpRight,
+    Lock, 
 } from "lucide-react";
 import {
     type MatchDetailResponse,
@@ -167,123 +168,136 @@ export const LiveActionBoard: React.FC<LiveActionBoardProps> = ({
 
     return (
         <div className="animate-in fade-in duration-500 flex flex-col h-full relative">
-            {(matchState === "WAITING_START" ||
-                matchState === "HALFTIME" ||
-                matchState === "FULL_TIME") && (
-                <div className="mb-6 p-8 bg-blue-50 rounded-3xl border-2 border-blue-200 flex flex-col items-center justify-center gap-4 shadow-sm">
-                    {matchState === "FULL_TIME" ? (
-                        <div className="text-center animate-in zoom-in-95 duration-300">
-                            <h2 className="text-xl font-black text-blue-900 mb-2">
-                                Đã hoàn thành {match.sportRules?.PERIODS || 2}{" "}
-                                {periodName.toLowerCase()} thi đấu
-                            </h2>
-                            <p className="text-sm font-medium text-blue-700 mb-6 bg-white py-2 px-4 rounded-xl shadow-sm border border-blue-100 inline-block">
-                                Vui lòng bấm{" "}
-                                <strong className="text-red-600">
-                                    KẾT THÚC TRẬN ĐẤU
-                                </strong>{" "}
-                                ở thanh công cụ bên dưới.
-                            </p>
-
-                            {/* Nếu luật có cho phép đá bù giờ, hiện thêm nút tùy chọn */}
-                            {match.sportRules?.OVERTIME_ALLOWED === "YES" && (
-                                <button
-                                    onClick={() =>
-                                        handleFireEvent("START_PERIOD")
-                                    }
-                                    className="px-6 py-3 bg-white hover:bg-gray-50 text-blue-700 border-2 border-blue-200 font-bold rounded-2xl shadow-sm transition-transform active:scale-95 flex items-center gap-2 mx-auto"
-                                >
-                                    <PlayCircle size={20} />
-                                    BẮT ĐẦU HIỆP PHỤ (HIỆP {currentPeriod})
-                                </button>
-                            )}
-                        </div>
-                    ) : (
-                        <>
-                            <h2 className="text-xl font-bold text-blue-900 text-center">
-                                {matchState === "WAITING_START"
-                                    ? `Trận đấu đã sẵn sàng`
-                                    : `Nghỉ giữa ${periodName.toLowerCase()}`}
-                            </h2>
-                            <button
-                                onClick={() => handleFireEvent("START_PERIOD")}
-                                className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-xl rounded-2xl shadow-lg shadow-blue-200 transition-transform active:scale-95 flex items-center gap-2"
-                            >
-                                <Play size={24} className="fill-current" />
-                                BẮT ĐẦU {periodName.toUpperCase()}{" "}
-                                {currentPeriod}
-                            </button>
-                        </>
-                    )}
+            {match.status === "FINALIZED" && (
+                <div className="mb-6 p-6 bg-slate-800 rounded-3xl flex items-center justify-center gap-3 shadow-md animate-in slide-in-from-top-4">
+                    <Lock size={24} className="text-slate-300" />
+                    <span className="text-lg font-bold text-white tracking-wide">
+                        CHẾ ĐỘ CHỈ XEM - DỮ LIỆU ĐÃ BỊ KHÓA
+                    </span>
                 </div>
             )}
 
-            {matchState === "PLAYING" && (
-                <div className="flex flex-col gap-4 mb-6">
-                    {/* NÚT KẾT THÚC HIỆP */}
-                    <div className="pb-2 border-b border-gray-100 border-dashed animate-in slide-in-from-top-2">
-                        <button
-                            onClick={() => setIsEndPeriodModalOpen(true)}
-                            className={cn(
-                                "w-full py-4 text-white font-black text-lg rounded-2xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2",
-                                timer.displayTime === "00:00"
-                                    ? "bg-red-600 hover:bg-red-700 shadow-red-200 animate-pulse"
-                                    : "bg-gray-800 hover:bg-gray-900 shadow-gray-200",
-                            )}
-                        >
-                            <StopCircle
-                                size={24}
-                                className="fill-current opacity-80"
-                            />
-                            KẾT THÚC {periodName.toUpperCase()} {currentPeriod}
-                        </button>
-                    </div>
+            {match.status !== "FINALIZED" && (
+                <>
+                    {(matchState === "WAITING_START" ||
+                        matchState === "HALFTIME" ||
+                        matchState === "FULL_TIME") && (
+                        <div className="mb-6 p-8 bg-blue-50 rounded-3xl border-2 border-blue-200 flex flex-col items-center justify-center gap-4 shadow-sm">
+                            {matchState === "FULL_TIME" ? (
+                                <div className="text-center animate-in zoom-in-95 duration-300">
+                                    <h2 className="text-xl font-black text-blue-900 mb-2">
+                                        Đã hoàn thành {match.sportRules?.PERIODS || 2}{" "}
+                                        {periodName.toLowerCase()} thi đấu
+                                    </h2>
+                                    <p className="text-sm font-medium text-blue-700 mb-6 bg-white py-2 px-4 rounded-xl shadow-sm border border-blue-100 inline-block">
+                                        Vui lòng bấm{" "}
+                                        <strong className="text-red-600">
+                                            KẾT THÚC TRẬN ĐẤU
+                                        </strong>{" "}
+                                        ở thanh công cụ bên dưới.
+                                    </p>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                        {activeEventCodes.length > 0 ? (
-                            activeEventCodes.map((code) => {
-                                const style = EVENT_UI_MAPPING[code] || {
-                                    ...DEFAULT_EVENT_UI,
-                                    label: code,
-                                };
-                                const Icon = style.icon;
-
-                                return (
-                                    <button
-                                        key={code}
-                                        onClick={() => handleFireEvent(code)}
-                                        className={cn(
-                                            "p-4 md:p-5 rounded-3xl flex flex-col items-center justify-center gap-2 active:scale-[0.98] transition-all",
-                                            style.className,
-                                            style.colSpan === 2
-                                                ? "col-span-2 md:col-span-2"
-                                                : "col-span-1 md:col-span-1",
-                                        )}
-                                    >
-                                        <Icon
-                                            size={style.colSpan === 2 ? 28 : 24}
-                                            className="shrink-0"
-                                        />
-                                        <span
-                                            className={cn(
-                                                "font-black uppercase tracking-wider text-center leading-tight",
-                                                style.colSpan === 2
-                                                    ? "text-base md:text-lg"
-                                                    : "text-[11px] md:text-sm",
-                                            )}
+                                    {/* Nếu luật có cho phép đá bù giờ, hiện thêm nút tùy chọn */}
+                                    {match.sportRules?.OVERTIME_ALLOWED === "YES" && (
+                                        <button
+                                            onClick={() =>
+                                                handleFireEvent("START_PERIOD")
+                                            }
+                                            className="px-6 py-3 bg-white hover:bg-gray-50 text-blue-700 border-2 border-blue-200 font-bold rounded-2xl shadow-sm transition-transform active:scale-95 flex items-center gap-2 mx-auto"
                                         >
-                                            {style.label}
-                                        </span>
+                                            <PlayCircle size={20} />
+                                            BẮT ĐẦU HIỆP PHỤ (HIỆP {currentPeriod})
+                                        </button>
+                                    )}
+                                </div>
+                            ) : (
+                                <>
+                                    <h2 className="text-xl font-bold text-blue-900 text-center">
+                                        {matchState === "WAITING_START"
+                                            ? `Trận đấu đã sẵn sàng`
+                                            : `Nghỉ giữa ${periodName.toLowerCase()}`}
+                                    </h2>
+                                    <button
+                                        onClick={() => handleFireEvent("START_PERIOD")}
+                                        className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-xl rounded-2xl shadow-lg shadow-blue-200 transition-transform active:scale-95 flex items-center gap-2"
+                                    >
+                                        <Play size={24} className="fill-current" />
+                                        BẮT ĐẦU {periodName.toUpperCase()}{" "}
+                                        {currentPeriod}
                                     </button>
-                                );
-                            })
-                        ) : (
-                            <div className="col-span-2 md:col-span-4 p-8 text-center text-gray-500 bg-gray-50 rounded-3xl border border-gray-200 border-dashed">
-                                Môn thể thao này chưa được cấu hình nút sự kiện.
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {matchState === "PLAYING" && (
+                        <div className="flex flex-col gap-4 mb-6">
+                            {/* NÚT KẾT THÚC HIỆP */}
+                            <div className="pb-2 border-b border-gray-100 border-dashed animate-in slide-in-from-top-2">
+                                <button
+                                    onClick={() => setIsEndPeriodModalOpen(true)}
+                                    className={cn(
+                                        "w-full py-4 text-white font-black text-lg rounded-2xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2",
+                                        timer.displayTime === "00:00"
+                                            ? "bg-red-600 hover:bg-red-700 shadow-red-200 animate-pulse"
+                                            : "bg-gray-800 hover:bg-gray-900 shadow-gray-200",
+                                    )}
+                                >
+                                    <StopCircle
+                                        size={24}
+                                        className="fill-current opacity-80"
+                                    />
+                                    KẾT THÚC {periodName.toUpperCase()} {currentPeriod}
+                                </button>
                             </div>
-                        )}
-                    </div>
-                </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                                {activeEventCodes.length > 0 ? (
+                                    activeEventCodes.map((code) => {
+                                        const style = EVENT_UI_MAPPING[code] || {
+                                            ...DEFAULT_EVENT_UI,
+                                            label: code,
+                                        };
+                                        const Icon = style.icon;
+
+                                        return (
+                                            <button
+                                                key={code}
+                                                onClick={() => handleFireEvent(code)}
+                                                className={cn(
+                                                    "p-4 md:p-5 rounded-3xl flex flex-col items-center justify-center gap-2 active:scale-[0.98] transition-all",
+                                                    style.className,
+                                                    style.colSpan === 2
+                                                        ? "col-span-2 md:col-span-2"
+                                                        : "col-span-1 md:col-span-1",
+                                                )}
+                                            >
+                                                <Icon
+                                                    size={style.colSpan === 2 ? 28 : 24}
+                                                    className="shrink-0"
+                                                />
+                                                <span
+                                                    className={cn(
+                                                        "font-black uppercase tracking-wider text-center leading-tight",
+                                                        style.colSpan === 2
+                                                            ? "text-base md:text-lg"
+                                                            : "text-[11px] md:text-sm",
+                                                    )}
+                                                >
+                                                    {style.label}
+                                                </span>
+                                            </button>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="col-span-2 md:col-span-4 p-8 text-center text-gray-500 bg-gray-50 rounded-3xl border border-gray-200 border-dashed">
+                                        Môn thể thao này chưa được cấu hình nút sự kiện.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
 
             {/* NHẬT KÝ SỰ KIỆN */}

@@ -28,7 +28,9 @@ export const RefereeMatchActionPage = () => {
         eventTime: string;
     }>({ isOpen: false, eventType: '', eventTime: '' });
     const [isEventSubmitting, setIsEventSubmitting] = useState<boolean>(false);
-    const { data, isLoading, refetch } = useGetMatchDetail(Number(matchId));
+    
+    // Đổi tên để bóc tách trạng thái đang tải ngầm (isFetching)
+    const { data, isLoading, isFetching, refetch } = useGetMatchDetail(Number(matchId));
     const matchTimer = useMatchTimer(data as any);
 
     // QUẢN LÝ DUYỆT ĐỘI HÌNH
@@ -123,6 +125,20 @@ export const RefereeMatchActionPage = () => {
         }
     };
 
+    const handleFinalizeMatch = async (note: string) => {
+        setIsStatusChanging(true);
+        try {
+            await matchActionApi.finalizeMatch(Number(matchId), { note });
+            toast.success("Đã ký duyệt thành công. Bảng xếp hạng đang được cập nhật!");
+            // Refetch để cập nhật UI sang chế độ View-Only
+            refetch();
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Không thể ký duyệt trận đấu");
+        } finally {
+            setIsStatusChanging(false);
+        }
+    };
+
     // GHI NHẬN SỰ KIỆN TRONG TRẬN 
     const handleFireEvent = async (eventType: string, currentFormattedTime: string) => {
         if (eventType === 'START_PERIOD' || eventType === 'END_PERIOD') {
@@ -165,11 +181,11 @@ export const RefereeMatchActionPage = () => {
         }
     };
 
-    if (isLoading) {
+    if (isLoading && !data) {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
                 <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-gray-500 font-medium">Đang tải cấu hình trận đấu...</p>
+                <p className="text-gray-500 font-medium">Đang tải dữ liệu trận đấu...</p>
             </div>
         );
     }
@@ -184,6 +200,10 @@ export const RefereeMatchActionPage = () => {
                     <ArrowLeft size={20} className="text-gray-600" />
                 </button>
                 <span className="text-sm font-bold text-gray-800 truncate">Phòng điều khiển trận đấu</span>
+                
+                {isFetching && (
+                    <div className="ml-auto w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                )}
             </div>
 
             <MatchScoreboard match={data} timer={matchTimer} />
@@ -266,6 +286,7 @@ export const RefereeMatchActionPage = () => {
                 canStartMatch={canStartMatch}
                 onConfirmLineup={handleConfirmSelected}
                 onChangeStatus={handleChangeMatchStatus}
+                onFinalizeMatch={handleFinalizeMatch} 
             />
         </div>
     );

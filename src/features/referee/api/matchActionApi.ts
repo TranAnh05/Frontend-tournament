@@ -4,6 +4,7 @@ import {
     type ChangeMatchStatusRequest,
     type ConfirmLineupRequest,
     type CreateMatchEventRequest,
+    type FinalizeMatchRequest,
     type MatchDetailResponse,
 } from "../types/matchAction";
 
@@ -34,4 +35,8 @@ export const matchActionApi = {
     ): Promise<ApiResponse<string>> => {
         return api.post(`/referee/matches/${matchId}/events`, data);
     },
+
+    finalizeMatch: (matchId: number, data: FinalizeMatchRequest): Promise<ApiResponse<string>> => {
+        return api.post(`/referee/matches/${matchId}/finalize`, data);
+    }
 };
