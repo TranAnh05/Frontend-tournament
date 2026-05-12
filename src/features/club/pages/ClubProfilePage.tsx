@@ -56,9 +56,9 @@ export default function ClubProfilePage() {
   }, [club]);
 
   const members = club?.members ?? [];
-  const tournamentHistory = club?.tournamentHistory ?? [];
+  const tournamentHistory = (club?.tournamentHistory ?? []).filter(t => t != null);
   const playedMatches = matches.filter(m => m.status === "FINISHED" || m.status === "IN_PROGRESS");
-  const approvedRegs = tournamentHistory.filter(r => r.registrationStatus === "APPROVED");
+  const approvedRegs = tournamentHistory.filter(r => r.registrationStatus === 'APPROVED');
 
   if (loading) return (
     <div className="flex items-center justify-center h-[300px] text-gray-500">⏳ Đang tải...</div>
@@ -319,6 +319,7 @@ export default function ClubProfilePage() {
     ) : (
       <div className="flex flex-col gap-3 max-h-[420px] overflow-y-auto">
         {tournamentHistory.map((r) => {
+          if (!r) return null;
           const st = REG_STATUS[r.registrationStatus] ?? { label: r.registrationStatus, color: "#6B7280", bg: "#F3F4F6" };
           return (
             <div key={r.tournamentId} className="border border-gray-200 rounded-xl p-4">

@@ -26,9 +26,11 @@ export default function RosterPage() {
   const [existingCount, setExistingCount] = useState<number>(0);
   const [confirmModal, setConfirmModal] = useState(false);
 
-  const approvedTournaments = (club?.tournamentHistory ?? [])
-    .filter(t => t.registrationStatus === "APPROVED");
+  // Map athleteId → tên giải đang bị khóa (lấy từ roster hiện tại của giải được chọn)
+  const [lockedMap, setLockedMap] = useState<Map<number, string>>(new Map());
 
+  const approvedTournaments = (club?.tournamentHistory ?? [])
+    .filter(t => t != null && t.registrationStatus === 'APPROVED');
   const members = (club?.members ?? []);
 
   const selectedTournament = approvedTournaments.find(t => t.tournamentId === selectedTournamentId);
@@ -39,17 +41,58 @@ export default function RosterPage() {
       const ids = new Set(roster.players.map(p => p.athleteId));
       setSelectedIds(ids);
       setExistingCount(roster.players.length);
+
+      // Xây dựng lockedMap từ response backend
+      const newLockedMap = new Map<number, string>();
+      roster.players.forEach(p => {
+        if (p.lockedInTournamentName) {
+          newLockedMap.set(p.athleteId, p.lockedInTournamentName);
+        }
+      });
+      setLockedMap(newLockedMap);
     } catch {
       setSelectedIds(new Set());
       setExistingCount(0);
+      setLockedMap(new Map());
+    }
+  }, []);
+
+  // Khi chọn giải mới, kiểm tra các thành viên xem ai bị khóa ở giải khác
+  // bằng cách gọi getMyRoster của giải đó (nếu đã có roster) hoặc
+  // gọi 1 endpoint riêng để lấy conflict. Ở đây ta dùng cách đơn giản:
+  // load roster sẵn của giải đó, sau đó check conflict từ members còn lại.
+  const loadConflictsForMembers = useCallback(async (tournamentId: number) => {
+    try {
+      // Gọi API lấy roster giải đã chọn (có chứa lockedInTournamentName từ backend)
+      const roster = await rosterApi.getMyRoster(tournamentId);
+      const ids = new Set(roster.players.map(p => p.athleteId));
+      setSelectedIds(ids);
+      setExistingCount(roster.players.length);
+
+      const newLockedMap = new Map<number, string>();
+      roster.players.forEach(p => {
+        if (p.lockedInTournamentName) {
+          newLockedMap.set(p.athleteId, p.lockedInTournamentName);
+        }
+      });
+      setLockedMap(newLockedMap);
+    } catch {
+      // Chưa có roster thì không sao, chỉ cần biết ai bị khóa
+      // Thử gọi 1 lần để lấy conflict info (backend trả 200 với mảng rỗng nếu chưa có roster)
+      setSelectedIds(new Set());
+      setExistingCount(0);
+      setLockedMap(new Map());
     }
   }, []);
 
   useEffect(() => {
-    if (selectedTournamentId) loadRoster(selectedTournamentId);
-  }, [selectedTournamentId, loadRoster]);
+    if (selectedTournamentId) loadConflictsForMembers(selectedTournamentId);
+  }, [selectedTournamentId, loadConflictsForMembers]);
 
   const toggleSelect = (athleteId: number) => {
+    // Không cho chọn VĐV đang bị khóa ở giải khác
+    if (lockedMap.has(athleteId)) return;
+
     setSelectedIds(prev => {
       const next = new Set(prev);
       if (next.has(athleteId)) next.delete(athleteId);
@@ -138,7 +181,9 @@ export default function RosterPage() {
             <CardHeader title={`Chọn VĐV tham gia (${selectedIds.size} đã chọn)`} icon="👥" />
             <div className="flex gap-2">
               <Btn variant="outline" size="sm"
-                onClick={() => setSelectedIds(new Set(members.map(m => m.athleteId)))}>
+                onClick={() => setSelectedIds(new Set(
+                  members.filter(m => !lockedMap.has(m.athleteId)).map(m => m.athleteId)
+                ))}>
                 Chọn tất cả
               </Btn>
               <Btn variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>
@@ -146,6 +191,13 @@ export default function RosterPage() {
               </Btn>
             </div>
           </div>
+
+          {/* Chú thích */}
+          {lockedMap.size > 0 && (
+            <div className="mb-3 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-xs text-orange-700">
+              🔒 <strong>{lockedMap.size} VĐV</strong> đang tham gia giải đấu khác và không thể chọn.
+            </div>
+          )}
 
           <table className="w-full border-collapse">
             <thead>
@@ -162,22 +214,51 @@ export default function RosterPage() {
               {members.map(m => {
                 const checked = selectedIds.has(m.athleteId);
                 const hs = HEALTH_STYLE[m.healthStatus] ?? HEALTH_STYLE.FIT;
+                const isInjured = m.healthStatus === "INJURED";
+                const lockedTournament = lockedMap.get(m.athleteId);
+                const isLocked = !!lockedTournament;
+                const isDisabled = isInjured || isLocked;
+
                 return (
                   <tr
                     key={m.athleteId}
-                    onClick={() => toggleSelect(m.athleteId)}
-                    className={`cursor-pointer border-b border-gray-50 transition-colors ${
-                      checked ? "bg-emerald-50/60" : "hover:bg-gray-50"
+                    onClick={() => !isDisabled && toggleSelect(m.athleteId)}
+                    title={isLocked ? `Đang tham gia: ${lockedTournament}` : undefined}
+                    className={`border-b border-gray-50 transition-colors ${
+                      isDisabled
+                        ? "opacity-50 cursor-not-allowed bg-gray-50"
+                        : checked
+                          ? "bg-emerald-50/60 cursor-pointer"
+                          : "hover:bg-gray-50 cursor-pointer"
                     }`}
                   >
                     <td className="py-3 pr-3">
                       <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                        checked ? "bg-emerald-600 border-emerald-600" : "border-gray-300"
+                        isLocked
+                          ? "bg-orange-100 border-orange-300"
+                          : checked
+                            ? "bg-emerald-600 border-emerald-600"
+                            : "border-gray-300"
                       }`}>
-                        {checked && <span className="text-white text-[11px] font-bold">✓</span>}
+                        {isLocked
+                          ? <span className="text-orange-500 text-[11px]">🔒</span>
+                          : checked
+                            ? <span className="text-white text-[11px] font-bold">✓</span>
+                            : null
+                        }
                       </div>
                     </td>
-                    <td className="py-3 pr-4 font-semibold text-[13px] text-gray-900">{m.fullName}</td>
+                    <td className="py-3 pr-4 font-semibold text-[13px] text-gray-900">
+                      {m.fullName}
+                      {isLocked && (
+                        <span className="ml-2 text-[11px] text-orange-500 font-normal">
+                          · đang ở {lockedTournament}
+                        </span>
+                      )}
+                      {isInjured && !isLocked && (
+                        <span className="ml-2 text-xs text-red-500 font-normal">🤕 Chấn thương</span>
+                      )}
+                    </td>
                     <td className="py-3 pr-4">
                       <span className="font-extrabold text-emerald-700">#{m.preferredNumber}</span>
                     </td>
@@ -201,6 +282,11 @@ export default function RosterPage() {
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
             <div className="text-sm text-gray-500">
               Đã chọn <b className="text-gray-900">{selectedIds.size}</b> VĐV
+              {lockedMap.size > 0 && (
+                <span className="ml-2 text-orange-500">
+                  · {lockedMap.size} bị khóa
+                </span>
+              )}
             </div>
             <Btn variant="primary" onClick={() => setConfirmModal(true)} disabled={selectedIds.size === 0}>
               📋 Nộp danh sách
