@@ -8,6 +8,7 @@ import { Button, Input, Tag, Spin, message, Modal, Table } from 'antd';
 import { registrationApi } from '../../api/tournamentApi'; // Import API
 
 const RegistrationPage = () => {
+  const { TextArea } = Input;
   // --- STATES ---
   const [tournaments, setTournaments] = useState<any[]>([]);
   const [registrations, setRegistrations] = useState<any[]>([]);
@@ -91,6 +92,63 @@ useEffect(() => {
 
   const selectedTournament = tournaments.find(t => t.id === selectedTourId);
 
+  const [processingId, setProcessingId] = useState<number | null>(null); // Lưu ID của đơn đang được xử lý
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [regIdToReject, setRegIdToReject] = useState<number | null>(null);
+  // ✨ 1. HÀM XỬ LÝ DUYỆT (APPROVE)
+  const handleApprove = async (regId: number) => {
+    if (!selectedTourId) return;
+    setProcessingId(regId);
+    try {
+      await registrationApi.approveRegistration(selectedTourId, regId);
+      message.success("Đã duyệt đơn đăng ký thành công!");
+      
+      // Cập nhật lại state local để UI đổi trạng thái ngay lập tức
+      setRegistrations(prev => 
+        prev.map(reg => reg.id === regId ? { ...reg, status: 'APPROVED' } : reg)
+      );
+    } catch (error: any) {
+      // Hiển thị lỗi từ Backend (ví dụ: Không đủ VĐV)
+      const errorMsg = error.response?.data?.message || "Có lỗi xảy ra khi duyệt!";
+      message.error(errorMsg);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+  //2. HÀM MỞ MODAL TỪ CHỐI
+  const handleOpenReject = (regId: number) => {
+    setRegIdToReject(regId);
+    setRejectReason(""); // Xóa trắng lý do cũ
+    setIsRejectModalOpen(true);
+  };
+  //3. HÀM XÁC NHẬN TỪ CHỐI (REJECT)
+  const handleConfirmReject = async () => {
+    if (!selectedTourId || !regIdToReject) return;
+    if (!rejectReason.trim()) {
+      message.warning("Vui lòng nhập lý do từ chối!");
+      return;
+    }
+    setProcessingId(regIdToReject);
+    try {
+      await registrationApi.rejectRegistration(selectedTourId, regIdToReject, rejectReason);
+      message.success("Đã từ chối đơn đăng ký!");
+      
+      // Cập nhật lại state local
+      setRegistrations(prev => 
+        prev.map(reg => reg.id === regIdToReject ? { 
+          ...reg, 
+          status: 'REJECTED', 
+          rejectReason: `Admin đã từ chối vì lý do: ${rejectReason}` // Cập nhật tạm UI
+        } : reg)
+      );
+      setIsRejectModalOpen(false);
+    } catch (error) {
+      message.error("Có lỗi xảy ra khi từ chối!");
+    } finally {
+      setProcessingId(null);
+    }
+  };
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-120px)]">
       
@@ -234,8 +292,22 @@ useEffect(() => {
                     <div className="flex gap-2">
                       {reg.status === 'PENDING' && (
                         <>
-                          <Button type="primary" className="bg-green-600 hover:bg-green-700 border-none rounded-lg flex items-center gap-1 font-medium"><CheckCircle size={16}/> Duyệt</Button>
-                          <Button type="primary" danger className="rounded-lg flex items-center gap-1 font-medium"><XCircle size={16}/> Từ chối</Button>
+<Button 
+        type="primary" 
+        loading={processingId === reg.id}
+        onClick={() => handleApprove(reg.id)}
+        className="bg-green-600 hover:bg-green-700 border-none rounded-lg flex items-center gap-1 font-medium"
+      >
+        {!processingId && <CheckCircle size={16}/>} Duyệt</Button>
+                               <Button 
+        type="primary" 
+        danger 
+        loading={processingId === reg.id}
+        onClick={() => handleOpenReject(reg.id)}
+        className="rounded-lg flex items-center gap-1 font-medium"
+      >
+        {!processingId && <XCircle size={16}/>} Từ chối
+      </Button>
                           <Button 
     onClick={() => handleOpenDetail(reg.id)}
     className="rounded-lg flex items-center gap-1 text-slate-600"
@@ -379,6 +451,28 @@ useEffect(() => {
             Không có dữ liệu chi tiết
           </div>
         )}
+      </Modal>
+      {/* ================= MODAL NHẬP LÝ DO TỪ CHỐI ================= */}
+      <Modal
+        title={<span className="text-red-600 font-bold flex items-center gap-2"><XCircle size={20}/> Xác nhận từ chối</span>}
+        open={isRejectModalOpen}
+        onOk={handleConfirmReject}
+        onCancel={() => setIsRejectModalOpen(false)}
+        okText="Từ chối CLB"
+        cancelText="Hủy bỏ"
+        okButtonProps={{ danger: true, loading: processingId !== null }}
+        centered
+      >
+        <div className="py-4">
+          <p className="mb-2 text-slate-600">Vui lòng nhập lý do từ chối để Câu lạc bộ có thể bổ sung hoặc sửa đổi hồ sơ:</p>
+          <TextArea 
+            rows={4} 
+            placeholder="Ví dụ: Thiếu giấy khám sức khỏe, không đủ số lượng cầu thủ..." 
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            className="rounded-lg"
+          />
+        </div>
       </Modal>
     </div>
   );
