@@ -1,5 +1,8 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
+import { athletePublicApi } from '../api/athletePublicApi';
+import CompleteProfileModal from '../components/Completeprofilemodal';
 
 const NAV = [
   { label: 'Danh sách CLB',   icon: '🏟️', path: '/athlete/clubs' },
@@ -10,9 +13,29 @@ const NAV = [
 export default function AthleteDashboardLayout() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    // Kiểm tra profile khi vào dashboard
+    athletePublicApi.getMyProfile().then(profile => {
+      // Nếu CCCD bắt đầu bằng "PENDING_" → chưa điền thông tin thật
+      if (!profile.identityNumber || profile.identityNumber.startsWith('PENDING_')) {
+        setShowModal(true);
+      }
+    }).catch(() => {
+      // Nếu API lỗi (không có athlete record) cũng hiện modal
+      setShowModal(true);
+    });
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+
+      {/* Modal bắt buộc điền thông tin — không thể đóng */}
+      {showModal && (
+        <CompleteProfileModal onCompleted={() => setShowModal(false)} />
+      )}
+
       <aside className="fixed top-0 left-0 bottom-0 w-60 bg-white border-r border-gray-200 flex flex-col z-10">
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-200">

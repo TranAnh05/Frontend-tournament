@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useClubs } from '../hooks/useClubs';
 import { useApplications } from '../hooks/useApplications';
 import ClubDetailModal from '../components/ClubDetailModal';
+import ApplyConfirmModal from '../components/ApplyConfirmModal';
 
 export default function ClubListPage() {
   const { clubs, loading } = useClubs();
-  const { applying, applyToClub, hasActiveApplication } = useApplications();
+  const { applying, applyToClub, hasActiveApplication, hasPendingApplication, isApprovedMember } = useApplications();
 
   const [search, setSearch] = useState('');
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -32,9 +33,16 @@ export default function ClubListPage() {
           <h1 className="text-xl font-extrabold text-gray-900">🏟️ Danh sách câu lạc bộ</h1>
           <p className="text-[13px] text-gray-500 mt-1">Tìm kiếm và ứng tuyển vào CLB phù hợp</p>
         </div>
-        {hasActiveApplication && (
+
+        {/* Chỉ hiện warning khi đang PENDING, không hiện khi đã APPROVED */}
+        {hasPendingApplication && (
           <div className="text-xs bg-amber-50 border border-amber-200 text-amber-700 px-3 py-2 rounded-lg font-semibold">
-            ⚠️ Bạn đã có đơn đang xử lý
+            ⚠️ Bạn đang có đơn chờ duyệt
+          </div>
+        )}
+        {isApprovedMember && (
+          <div className="text-xs bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg font-semibold">
+            ✅ Bạn đã là thành viên CLB
           </div>
         )}
       </div>
@@ -87,30 +95,15 @@ export default function ClubListPage() {
         />
       )}
 
-      {/* Confirm Modal */}
+      {/* Apply Confirm Modal */}
       {confirmId && targetClub && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
-            <div className="text-4xl mb-3">📋</div>
-            <div className="font-extrabold text-gray-900 mb-1">Xác nhận ứng tuyển</div>
-            <p className="text-[13px] text-gray-500 mb-4">
-              Nộp đơn vào <strong>{targetClub.name}</strong>?
-            </p>
-            <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg mb-4">
-              ⚠️ Bạn chỉ được ứng tuyển một CLB tại một thời điểm
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmId(null)}
-                className="flex-1 px-4 py-2 rounded-lg border text-gray-600 text-sm cursor-pointer">
-                Hủy
-              </button>
-              <button onClick={confirmApply} disabled={applying}
-                className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-bold cursor-pointer disabled:opacity-60">
-                {applying ? '⏳...' : '✅ Xác nhận'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ApplyConfirmModal
+          clubId={confirmId}
+          clubName={targetClub.name}
+          applying={applying}
+          onConfirm={confirmApply}
+          onClose={() => setConfirmId(null)}
+        />
       )}
     </div>
   );
