@@ -34,6 +34,8 @@ export const registrationApi = {
   // Lấy danh sách giải đang mở đăng ký
   getOpeningTournaments: () => 
     api.get('/tournaments/opening'),
+  getRegistrationDetail: (tournamentId: number, regId: number) => 
+    api.get(`/tournaments/${tournamentId}/registrations/${regId}`),
 
   // Lấy danh sách đội đăng ký của 1 giải
   getRegistrations: (tournamentId: number, params?: any) => 
@@ -45,4 +47,6 @@ export const registrationApi = {
     
   rejectRegistration: (tournamentId: number, regId: number, reason: string) => 
     api.patch(`/tournaments/${tournamentId}/registrations/${regId}/reject`, { reason }),
+
+  
 };

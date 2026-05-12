@@ -4,7 +4,7 @@ import {
   Trophy, Calendar, Users, ChevronRight, Search, Filter, 
   Download, User, Mail, Phone, CheckCircle, XCircle, Eye, FileText
 } from 'lucide-react';
-import { Button, Input, Tag, Spin, message } from 'antd'; // Thêm Spin và message
+import { Button, Input, Tag, Spin, message, Modal, Table } from 'antd';
 import { registrationApi } from '../../api/tournamentApi'; // Import API
 
 const RegistrationPage = () => {
@@ -15,6 +15,32 @@ const RegistrationPage = () => {
   
   const [loadingTours, setLoadingTours] = useState(false);
   const [loadingRegs, setLoadingRegs] = useState(false);
+
+  //  STATE CHO CHI TIẾT
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [detailData, setDetailData] = useState<any>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+// --- EFFECT 1: Load danh sách giải đấu đang mở đăng ký ---
+  const handleOpenDetail = async (regId: number) => {
+    if (!selectedTourId) return;
+    
+    setIsDetailModalOpen(true);
+    setLoadingDetail(true);
+    try {
+      const res = await registrationApi.getRegistrationDetail(selectedTourId, regId);
+      // Xử lý bọc lót interceptor giống như lúc lấy danh sách
+      const responseData = res.data ? res.data : res; 
+      
+      setDetailData(responseData.result);
+    } catch (error) {
+      console.error("Lỗi lấy chi tiết:", error);
+      message.error("Không thể tải dữ liệu chi tiết!");
+      setIsDetailModalOpen(false);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
 
 useEffect(() => {
     const fetchTournaments = async () => {
@@ -210,6 +236,12 @@ useEffect(() => {
                         <>
                           <Button type="primary" className="bg-green-600 hover:bg-green-700 border-none rounded-lg flex items-center gap-1 font-medium"><CheckCircle size={16}/> Duyệt</Button>
                           <Button type="primary" danger className="rounded-lg flex items-center gap-1 font-medium"><XCircle size={16}/> Từ chối</Button>
+                          <Button 
+    onClick={() => handleOpenDetail(reg.id)}
+    className="rounded-lg flex items-center gap-1 text-slate-600"
+  >
+    <Eye size={16}/> Chi tiết
+  </Button>
                         </>
                       )}
                     </div>
@@ -220,6 +252,134 @@ useEffect(() => {
           )}
         </AnimatePresence>
       </div>
+      {/* ================= MODAL CHI TIẾT ĐĂNG KÝ ================= */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 border-b pb-3">
+            <Trophy className="text-blue-600" size={24} />
+            <h3 className="text-xl font-bold text-slate-800 m-0">Hồ sơ đăng ký giải đấu</h3>
+          </div>
+        }
+        open={isDetailModalOpen}
+        onCancel={() => {
+          setIsDetailModalOpen(false);
+          setDetailData(null); // Clear dữ liệu cũ tránh bị chớp hình
+        }}
+        footer={null} // Ẩn nút OK/Cancel vì đây là modal xem
+        width={850} // Kéo rộng Modal để hiển thị bảng cho đẹp
+        centered
+      >
+        {loadingDetail ? (
+           <div className="py-20 flex justify-center">
+             <Spin description="Đang tải dữ liệu hồ sơ..." size="large" />
+           </div>
+        ) : detailData ? (
+          <div className="space-y-6 pt-4">
+            
+            {/* THÔNG TIN CLB & LIÊN HỆ (Layout 2 cột) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200">
+              {/* Cột 1: Đội bóng */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+                  <Users size={18} className="text-blue-500" /> Thông tin Đội bóng
+                </h4>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <span className="text-slate-500">Tên CLB:</span>
+                  <span className="col-span-2 font-bold text-slate-800">{detailData.clubName}</span>
+                  
+                  <span className="text-slate-500">Áo sân nhà:</span>
+                  <span className="col-span-2 font-medium">{detailData.homeKitColor || 'Chưa cập nhật'}</span>
+                  
+                  <span className="text-slate-500">Áo sân khách:</span>
+                  <span className="col-span-2 font-medium">{detailData.awayKitColor || 'Chưa cập nhật'}</span>
+                </div>
+              </div>
+
+              {/* Cột 2: Liên hệ */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+                  <User size={18} className="text-emerald-500" /> Người đại diện
+                </h4>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <span className="text-slate-500">Họ và tên:</span>
+                  <span className="col-span-2 font-bold text-slate-800">{detailData.repName}</span>
+                  
+                  <span className="text-slate-500">Điện thoại:</span>
+                  <span className="col-span-2 font-medium">{detailData.phone}</span>
+                  
+                  <span className="text-slate-500">Email:</span>
+                  <span className="col-span-2 font-medium">{detailData.email}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* BẢNG DANH SÁCH VẬN ĐỘNG VIÊN */}
+            <div>
+              <h4 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                <Users size={18} className="text-blue-500"/> Danh sách Vận động viên ({detailData.roster?.length || 0})
+              </h4>
+              <Table 
+                dataSource={detailData.roster || []} 
+                rowKey="id"
+                pagination={false} // Không phân trang vì danh sách VĐV thường < 30 người
+                size="small"
+                bordered
+                scroll={{ y: 300 }} // Cuộn dọc nếu danh sách quá dài
+                columns={[
+                  { 
+                    title: 'Số áo', 
+                    dataIndex: 'jerseyNumber', 
+                    key: 'jerseyNumber', 
+                    width: 70, 
+                    align: 'center',
+                    render: (num) => <span className="font-bold">{num}</span>
+                  },
+                  { 
+                    title: 'Mã VĐV', 
+                    dataIndex: 'athleteName', 
+                    key: 'athleteName',
+                    render: (text) => <span className="font-medium text-slate-700">{text}</span>
+                  },
+                  { 
+                    title: 'Vị trí', 
+                    dataIndex: 'position', 
+                    key: 'position' 
+                  },
+                  { 
+                    title: 'Vai trò', 
+                    dataIndex: 'role', 
+                    key: 'role',
+                    align: 'center',
+                    render: (role) => (
+                      <Tag color={role === 'CAPTAIN' ? 'magenta' : 'blue'} className="m-0 font-medium">
+                        {role === 'CAPTAIN' ? 'Đội trưởng' : 'Cầu thủ'}
+                      </Tag>
+                    )
+                  },
+                  { 
+                    title: 'Trạng thái', 
+                    dataIndex: 'status', 
+                    key: 'status',
+                    align: 'center',
+                    render: (status) => {
+                      let color = 'green';
+                      let label = 'Hợp lệ';
+                      if (status === 'SUSPENDED') { color = 'red'; label = 'Đình chỉ'; }
+                      else if (status === 'INJURED') { color = 'orange'; label = 'Chấn thương'; }
+                      return <Tag color={color} className="m-0 border-none">{label}</Tag>
+                    }
+                  }
+                ]}
+              />
+            </div>
+
+          </div>
+        ) : (
+          <div className="py-10 text-center text-slate-500">
+            Không có dữ liệu chi tiết
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
