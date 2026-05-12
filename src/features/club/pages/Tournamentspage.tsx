@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { tournamentApi } from "../api/tournamentApi";
+import { athleteApi } from "../api/athleteApi";
 import type { TournamentResponse, RegistrationResponse } from "../api/tournamentApi";
+import type { ClubMemberResponse } from "../api/athleteApi";
 import { useUiStore } from "../store/uiStore";
 import { Card, CardHeader, Modal, Field, Input, Btn } from "../components/common/UIComponents";
 
@@ -25,6 +27,19 @@ const FORMAT_LABEL: Record<string, string> = {
   GROUP_STAGE:  "Vòng bảng",
 };
 
+const POSITIONS = [
+  "Thủ môn", "Trung vệ", "Hậu vệ cánh", "Tiền vệ phòng ngự",
+  "Tiền vệ trung tâm", "Tiền vệ công", "Tiền vệ cánh",
+  "Tiền đạo cánh", "Tiền đạo cắm", "Trung phong",
+];
+
+interface RosterEntry {
+  athleteId: number;
+  jerseyNumber: string;
+  position: string;
+  role: string;
+}
+
 export default function TournamentsPage() {
   const showToast = useUiStore(s => s.showToast);
   const [tournaments, setTournaments] = useState<TournamentResponse[]>([]);
@@ -32,11 +47,19 @@ export default function TournamentsPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"ALL" | "MY">("ALL");
 
-  // Modal đăng ký
+  // Modal đăng ký — bước 1: thông tin đội
   const [regModal, setRegModal] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState<TournamentResponse | null>(null);
   const [regForm, setRegForm] = useState({ homeKitColor: "", awayKitColor: "", financialProofUrl: "" });
   const [submitting, setSubmitting] = useState(false);
+
+  // Bước 2: chọn đội hình
+  const [step, setStep] = useState<1 | 2>(1);
+  const [members, setMembers] = useState<ClubMemberResponse[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [selectedAthletes, setSelectedAthletes] = useState<Set<number>>(new Set());
+  const [rosterEntries, setRosterEntries] = useState<Record<number, RosterEntry>>({});
+  const [registrationId, setRegistrationId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -60,20 +83,95 @@ export default function TournamentsPage() {
   const getMyReg = (tournamentId: number) =>
     registrations.find(r => r.tournamentId === tournamentId);
 
+  // Bước 1: đăng ký giải → nhận registrationId → chuyển sang bước 2
   const handleRegister = async () => {
     if (!selectedTournament) return;
     if (!regForm.homeKitColor.trim()) return alert("Vui lòng nhập màu áo chính!");
     setSubmitting(true);
     try {
-      await tournamentApi.register(selectedTournament.id, regForm);
-      showToast("Đăng ký giải đấu thành công!");
-      setRegModal(false);
+      const result = await tournamentApi.register(selectedTournament.id, regForm);
+      setRegistrationId(result.id);
+      showToast("Đăng ký giải thành công! Tiếp tục nộp danh sách VĐV.");
       await load();
+
+      // Chuyển sang bước 2
+      setLoadingMembers(true);
+      const memberList = await athleteApi.getMembers("APPROVED");
+      setMembers(memberList);
+      // Khởi tạo roster entries mặc định cho từng thành viên
+      const defaultEntries: Record<number, RosterEntry> = {};
+      memberList.forEach(m => {
+        defaultEntries[m.athleteId] = {
+          athleteId: m.athleteId,
+          jerseyNumber: m.preferredNumber?.toString() ?? "",
+          position: m.preferredPosition ?? "",
+          role: "PLAYER",
+        };
+      });
+      setRosterEntries(defaultEntries);
+      setLoadingMembers(false);
+      setStep(2);
     } catch (err: any) {
       showToast(err.response?.data?.message || "Đăng ký thất bại!", "error");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Toggle chọn/bỏ chọn VĐV
+  const toggleAthlete = (athleteId: number) => {
+    setSelectedAthletes(prev => {
+      const next = new Set(prev);
+      if (next.has(athleteId)) next.delete(athleteId);
+      else next.add(athleteId);
+      return next;
+    });
+  };
+
+  // Cập nhật thông tin roster của 1 VĐV
+  const updateRosterEntry = (athleteId: number, field: keyof RosterEntry, value: string) => {
+    setRosterEntries(prev => ({
+      ...prev,
+      [athleteId]: { ...prev[athleteId], [field]: value },
+    }));
+  };
+
+  // Bước 2: nộp danh sách VĐV
+  const handleSubmitRoster = async () => {
+    if (!selectedTournament) return;
+    if (selectedAthletes.size === 0) return alert("Vui lòng chọn ít nhất 1 VĐV!");
+    if (selectedTournament.minAthletes && selectedAthletes.size < selectedTournament.minAthletes) {
+      return alert(`Cần ít nhất ${selectedTournament.minAthletes} VĐV!`);
+    }
+    if (selectedTournament.maxAthletes && selectedAthletes.size > selectedTournament.maxAthletes) {
+      return alert(`Tối đa ${selectedTournament.maxAthletes} VĐV!`);
+    }
+
+    setSubmitting(true);
+    try {
+      const rosters = Array.from(selectedAthletes).map(id => ({
+        athleteId: id,
+        jerseyNumber: Number(rosterEntries[id]?.jerseyNumber) || 0,
+        position: rosterEntries[id]?.position || "",
+        role: rosterEntries[id]?.role || "PLAYER",
+      }));
+      await tournamentApi.submitRoster(selectedTournament.id, { rosters });
+      showToast("Nộp danh sách VĐV thành công!");
+      closeModal();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || "Nộp danh sách thất bại!", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const closeModal = () => {
+    setRegModal(false);
+    setStep(1);
+    setSelectedAthletes(new Set());
+    setRosterEntries({});
+    setRegistrationId(null);
+    setMembers([]);
   };
 
   const handleWithdraw = async (tournamentId: number) => {
@@ -112,10 +210,8 @@ export default function TournamentsPage() {
         ))}
       </div>
 
-      {/* Loading */}
       {loading && <div className="text-center py-20 text-gray-400">⏳ Đang tải...</div>}
 
-      {/* Empty */}
       {!loading && displayList.length === 0 && (
         <div className="text-center py-20 text-gray-400">
           <div className="text-5xl mb-3">📭</div>
@@ -134,7 +230,6 @@ export default function TournamentsPage() {
         return (
           <Card key={t.id}>
             <div className="p-5">
-              {/* Top row */}
               <div className="flex items-start justify-between gap-3 mb-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -151,6 +246,7 @@ export default function TournamentsPage() {
                     <Btn size="sm" variant="primary" onClick={() => {
                       setSelectedTournament(t);
                       setRegForm({ homeKitColor: "", awayKitColor: "", financialProofUrl: "" });
+                      setStep(1);
                       setRegModal(true);
                     }}>📝 Đăng ký</Btn>
                   )}
@@ -160,7 +256,6 @@ export default function TournamentsPage() {
                 </div>
               </div>
 
-              {/* Info grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
                   { label: "Bắt đầu",    value: new Date(t.startDate).toLocaleDateString("vi-VN"), icon: "📅" },
@@ -175,14 +270,12 @@ export default function TournamentsPage() {
                 ))}
               </div>
 
-              {/* Điểm số */}
               <div className="flex gap-4 mt-3 text-xs text-gray-400">
                 <span>🏅 Thắng: <strong className="text-gray-700">{t.winPoints} điểm</strong></span>
                 <span>🤝 Hòa: <strong className="text-gray-700">{t.drawPoints} điểm</strong></span>
                 <span>❌ Thua: <strong className="text-gray-700">{t.lossPoints} điểm</strong></span>
               </div>
 
-              {/* Thông tin đăng ký nếu có */}
               {myReg && (
                 <div className="mt-3 pt-3 border-t border-gray-100 flex gap-4 text-xs text-gray-400">
                   <span>🎽 Áo chính: <strong className="text-gray-700">{myReg.homeKitColor}</strong></span>
@@ -195,27 +288,155 @@ export default function TournamentsPage() {
         );
       })}
 
-      {/* Modal đăng ký */}
+      {/* ===== MODAL ĐĂNG KÝ ===== */}
       {regModal && selectedTournament && (
-        <Modal title={`Đăng ký: ${selectedTournament.name}`} onClose={() => setRegModal(false)}>
-          <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-2.5 mb-4 text-xs text-blue-600">
-            📌 Yêu cầu tối thiểu <strong>{selectedTournament.minAthletes}</strong> VĐV, tối đa <strong>{selectedTournament.maxAthletes}</strong> VĐV
+        <Modal
+          title={`Đăng ký: ${selectedTournament.name}`}
+          onClose={closeModal}
+        >
+          {/* Step indicator */}
+          <div className="flex items-center gap-2 mb-5">
+            <div className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full ${step === 1 ? "bg-blue-600 text-white" : "bg-green-100 text-green-700"}`}>
+              {step === 1 ? "1" : "✓"} Thông tin đội
+            </div>
+            <div className="flex-1 h-px bg-gray-200" />
+            <div className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full ${step === 2 ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-400"}`}>
+              2 Danh sách VĐV
+            </div>
           </div>
-          <Field label="Màu áo chính *">
-            <Input value={regForm.homeKitColor} onChange={v => setRegForm({ ...regForm, homeKitColor: v })} placeholder="VD: Đỏ, Xanh dương..." />
-          </Field>
-          <Field label="Màu áo phụ">
-            <Input value={regForm.awayKitColor} onChange={v => setRegForm({ ...regForm, awayKitColor: v })} placeholder="VD: Trắng (tùy chọn)" />
-          </Field>
-          <Field label="Link minh chứng tài chính">
-            <Input value={regForm.financialProofUrl} onChange={v => setRegForm({ ...regForm, financialProofUrl: v })} placeholder="https://drive.google.com/..." />
-          </Field>
-          <div className="flex gap-2 justify-end mt-4">
-            <Btn onClick={() => setRegModal(false)}>Hủy</Btn>
-            <Btn variant="primary" onClick={handleRegister} disabled={submitting}>
-              {submitting ? "Đang gửi..." : "📝 Xác nhận đăng ký"}
-            </Btn>
-          </div>
+
+          {/* ---- BƯỚC 1: Thông tin đội ---- */}
+          {step === 1 && (
+            <>
+              <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-2.5 mb-4 text-xs text-blue-600">
+                📌 Yêu cầu tối thiểu <strong>{selectedTournament.minAthletes}</strong> VĐV, tối đa <strong>{selectedTournament.maxAthletes}</strong> VĐV
+              </div>
+              <Field label="Màu áo chính *">
+                <Input value={regForm.homeKitColor} onChange={v => setRegForm({ ...regForm, homeKitColor: v })} placeholder="VD: Đỏ, Xanh dương..." />
+              </Field>
+              <Field label="Màu áo phụ">
+                <Input value={regForm.awayKitColor} onChange={v => setRegForm({ ...regForm, awayKitColor: v })} placeholder="VD: Trắng (tùy chọn)" />
+              </Field>
+              <Field label="Link minh chứng tài chính">
+                <Input value={regForm.financialProofUrl} onChange={v => setRegForm({ ...regForm, financialProofUrl: v })} placeholder="https://drive.google.com/..." />
+              </Field>
+              <div className="flex gap-2 justify-end mt-4">
+                <Btn onClick={closeModal}>Hủy</Btn>
+                <Btn variant="primary" onClick={handleRegister} disabled={submitting}>
+                  {submitting ? "Đang gửi..." : "Tiếp theo →"}
+                </Btn>
+              </div>
+            </>
+          )}
+
+          {/* ---- BƯỚC 2: Chọn đội hình ---- */}
+          {step === 2 && (
+            <>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-bold text-gray-700">
+                  👥 Chọn VĐV tham dự ({selectedAthletes.size}/{selectedTournament.maxAthletes})
+                </p>
+                <span className="text-xs text-gray-400">
+                  Tối thiểu {selectedTournament.minAthletes} người
+                </span>
+              </div>
+
+              {loadingMembers && (
+                <div className="text-center py-8 text-gray-400">⏳ Đang tải danh sách thành viên...</div>
+              )}
+
+              {!loadingMembers && members.length === 0 && (
+                <div className="text-center py-8 text-gray-400">
+                  <div className="text-3xl mb-2">📭</div>
+                  CLB chưa có thành viên nào được duyệt
+                </div>
+              )}
+
+              {!loadingMembers && members.length > 0 && (
+                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                  {members.map(m => {
+                    const selected = selectedAthletes.has(m.athleteId);
+                    const entry = rosterEntries[m.athleteId];
+                    const isInjured = m.healthStatus === "INJURED";
+                    return (
+                      <div
+                        key={m.athleteId}
+                        className={`border rounded-xl p-3 transition-all ${selected ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-white"} ${isInjured ? "opacity-60" : ""}`}
+                      >
+                        {/* Row chọn VĐV */}
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={() => !isInjured && toggleAthlete(m.athleteId)}
+                            disabled={isInjured}
+                            className="w-4 h-4 accent-blue-600 cursor-pointer"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-bold text-gray-900 truncate">
+                              {m.fullName}
+                              {isInjured && <span className="ml-2 text-xs text-red-500 font-normal">🤕 Chấn thương</span>}
+                            </div>
+                            <div className="text-xs text-gray-400">{m.preferredPosition ?? "—"} · #{m.preferredNumber ?? "—"}</div>
+                          </div>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${m.clubRole === "CAPTAIN" ? "bg-yellow-100 text-yellow-700" : m.clubRole === "HEAD_COACH" ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-500"}`}>
+                            {m.clubRole === "CAPTAIN" ? "⭐ Đội trưởng" : m.clubRole === "HEAD_COACH" ? "👨‍💼 HLV" : "Thành viên"}
+                          </span>
+                        </div>
+
+                        {/* Chi tiết khi được chọn */}
+                        {selected && (
+                          <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-blue-100">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Số áo</label>
+                              <input
+                                type="number" min={1} max={99}
+                                value={entry?.jerseyNumber ?? ""}
+                                onChange={e => updateRosterEntry(m.athleteId, "jerseyNumber", e.target.value)}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
+                                placeholder="VD: 10"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Vị trí</label>
+                              <select
+                                value={entry?.position ?? ""}
+                                onChange={e => updateRosterEntry(m.athleteId, "position", e.target.value)}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
+                              >
+                                <option value="">-- Chọn --</option>
+                                {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Vai trò</label>
+                              <select
+                                value={entry?.role ?? "PLAYER"}
+                                onChange={e => updateRosterEntry(m.athleteId, "role", e.target.value)}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
+                              >
+                                <option value="PLAYER">Cầu thủ</option>
+                                <option value="CAPTAIN">Đội trưởng</option>
+                                <option value="GOALKEEPER">Thủ môn</option>
+                                <option value="SUBSTITUTE">Dự bị</option>
+                              </select>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="flex gap-2 justify-end mt-4 pt-3 border-t border-gray-100">
+                <Btn onClick={closeModal}>Bỏ qua</Btn>
+                <Btn variant="primary" onClick={handleSubmitRoster} disabled={submitting || selectedAthletes.size === 0}>
+                  {submitting ? "Đang nộp..." : `📋 Nộp danh sách (${selectedAthletes.size} VĐV)`}
+                </Btn>
+              </div>
+            </>
+          )}
         </Modal>
       )}
     </div>
