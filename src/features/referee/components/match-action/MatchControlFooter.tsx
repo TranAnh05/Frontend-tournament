@@ -5,6 +5,12 @@ import { MatchConfirmationModal } from "./MatchConfirmationModal";
 
 interface MatchControlFooterProps {
     status: string;
+    matchState:
+        | "WAITING_START"
+        | "PLAYING"
+        | "HALFTIME"
+        | "FULL_TIME"
+        | "ENDED";
     selectedIds: number[];
     isConfirming: boolean;
     isStatusChanging: boolean;
@@ -15,6 +21,7 @@ interface MatchControlFooterProps {
 
 export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
     status,
+    matchState,
     selectedIds,
     isConfirming,
     isStatusChanging,
@@ -23,6 +30,15 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
     onChangeStatus,
 }) => {
     const isPaused = status === "PAUSED";
+
+    // LOGIC KHÓA NÚT: 
+    const isWaitingStart = matchState === "WAITING_START";
+    const isHalftime = matchState === "HALFTIME";
+    const isFullTime = matchState === "FULL_TIME";
+
+    // Nút Tạm Dừng sẽ bị khóa nếu trận đấu chưa bắt đầu hoặc đang nghỉ giữa giờ
+    const isPauseDisabled =
+        isWaitingStart || isHalftime || isFullTime || isStatusChanging;
 
     const [modalConfig, setModalConfig] = useState<{
         isOpen: boolean;
@@ -54,7 +70,7 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
                     "Hành động này không thể hoàn tác. Trận đấu sẽ bị hủy.",
                 confirmText: "Xác nhận Hủy",
                 variant: "danger",
-                requireInput: true, // YÊU CẦU TRỌNG TÀI NHẬP LÝ DO
+                requireInput: true,
                 inputPlaceholder:
                     "Ví dụ: Mưa bão lớn, Vận động viên gặp sự cố, Lỗi kỹ thuật sân bãi...",
             });
@@ -67,7 +83,7 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
                     "Xác nhận kết thúc trận đấu và chốt tỷ số chung cuộc.",
                 confirmText: "Kết thúc ngay",
                 variant: "primary",
-                requireInput: false, // KẾT THÚC THÌ KHÔNG CẦN NHẬP LÝ DO
+                requireInput: false, 
                 inputPlaceholder: "",
             });
         }
@@ -143,17 +159,20 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
                     {(status === "IN_PROGRESS" || status === "PAUSED") && (
                         <div className="flex flex-col gap-3 animate-in slide-in-from-bottom-4 duration-300">
                             <div className="flex gap-3">
+                                {/* NÚT TẠM DỪNG: Bị khóa nếu chưa bấm "Bắt đầu hiệp 1" hoặc đang nghỉ giải lao */}
                                 <Button
+                                    disabled={isPauseDisabled}
                                     onClick={() =>
                                         onChangeStatus(
                                             isPaused ? "IN_PROGRESS" : "PAUSED",
                                         )
                                     }
-                                    isLoading={isStatusChanging}
-                                    className={`flex-1 py-4 font-bold rounded-xl shadow-sm ${
-                                        isPaused
-                                            ? "bg-green-100 text-green-700 hover:bg-green-200 border border-green-300"
-                                            : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border border-yellow-300"
+                                    className={`flex-1 py-4 font-bold rounded-xl shadow-sm transition-all ${
+                                        isPauseDisabled
+                                            ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400"
+                                            : isPaused
+                                              ? "bg-green-100 text-green-700 hover:bg-green-200 border border-green-300"
+                                              : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border border-yellow-300"
                                     }`}
                                 >
                                     {isPaused ? (
@@ -164,6 +183,7 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
                                     {isPaused ? "TIẾP TỤC" : "TẠM DỪNG"}
                                 </Button>
 
+                                {/* NÚT HỦY TRẬN: Vẫn mở để phòng sự cố */}
                                 <Button
                                     onClick={() => openModal("CANCELED")}
                                     disabled={isStatusChanging}
@@ -174,10 +194,15 @@ export const MatchControlFooter: React.FC<MatchControlFooterProps> = ({
                                 </Button>
                             </div>
 
+                            {/* NÚT KẾT THÚC: Bị khóa nếu chưa từng bấm "Bắt đầu hiệp 1" */}
                             <Button
                                 onClick={() => openModal("FINISHED")}
-                                disabled={isStatusChanging}
-                                className="w-full py-5 text-lg font-bold bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-200 rounded-2xl"
+                                disabled={isWaitingStart || isStatusChanging}
+                                className={`w-full py-5 text-lg font-bold shadow-lg rounded-2xl transition-all ${
+                                    isWaitingStart
+                                        ? "bg-red-300 text-white cursor-not-allowed opacity-70"
+                                        : "bg-red-600 hover:bg-red-700 text-white shadow-red-200"
+                                }`}
                             >
                                 <Square
                                     size={20}

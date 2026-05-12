@@ -3,6 +3,7 @@ import { type ApiResponse } from "@/types/api";
 import {
     type ChangeMatchStatusRequest,
     type ConfirmLineupRequest,
+    type CreateMatchEventRequest,
     type MatchDetailResponse,
 } from "../types/matchAction";
 
@@ -25,5 +26,12 @@ export const matchActionApi = {
         data: ChangeMatchStatusRequest,
     ): Promise<ApiResponse<string>> => {
         return api.patch(`/referee/matches/${matchId}/status`, data);
+    },
+
+    createEvent: (
+        matchId: number,
+        data: CreateMatchEventRequest,
+    ): Promise<ApiResponse<string>> => {
+        return api.post(`/referee/matches/${matchId}/events`, data);
     },
 };
