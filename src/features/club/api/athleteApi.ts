@@ -55,4 +55,12 @@ export const athleteApi = {
     const res = await api.patch(`/clubs/me/members/${memberId}/role`, { clubRole });
     return (res as unknown as ApiResponse<ClubMemberResponse>).result;
   },
+
+  // Lấy map athleteId → tên giải đang bị khóa (dùng khi chọn VĐV lúc đăng ký)
+  // tournamentId = 0 nếu đang đăng ký giải hoàn toàn mới (chưa có id)
+  getLockedAthletes: async (tournamentId: number = 0): Promise<Map<number, string>> => {
+    const res = await api.get('/clubs/me/members/conflicts', { params: { tournamentId } });
+    const raw = (res as unknown as ApiResponse<Record<string, string>>).result ?? {};
+    return new Map(Object.entries(raw).map(([k, v]) => [Number(k), v]));
+  },
 };

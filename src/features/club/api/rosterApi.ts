@@ -9,6 +9,9 @@ export interface RosterPlayer {
   role: string;
   status: string;
   healthStatus: string;
+  // Nếu VĐV đang bị khóa ở giải khác, backend trả về 2 field này
+  lockedInTournamentId?: number | null;
+  lockedInTournamentName?: string | null;
 }
 
 export interface RosterResponse {
@@ -25,11 +28,11 @@ export interface RosterPlayerRequest {
 }
 
 export const rosterApi = {
- getMyRoster: (tournamentId: number) =>
-  api.get(`/clubs/tournaments/${tournamentId}/roster`)
-     .then((r: any) => r.result as RosterResponse),
+  getMyRoster: (tournamentId: number) =>
+    api.get(`/clubs/tournaments/${tournamentId}/roster`)
+       .then((r: any) => r.result as RosterResponse),
 
-submitRoster: (tournamentId: number, players: RosterPlayerRequest[]) =>
-  api.post(`/clubs/tournaments/${tournamentId}/roster`, { players })
-     .then((r: any) => r.result as RosterResponse),
+  submitRoster: (tournamentId: number, players: RosterPlayerRequest[]) =>
+    api.post(`/clubs/tournaments/${tournamentId}/roster`, { players })
+       .then((r: any) => r.result as RosterResponse),
 };
