@@ -27,6 +27,7 @@ const DrawTab: React.FC<DrawTabProps> = ({ tournamentId }) => {
       const responseData = res.data ? res.data : res;
       setGroups(responseData.result || []);
       
+
     } catch (error) {
       console.error(error);
       message.error("Lỗi khi tải dữ liệu bảng đấu");

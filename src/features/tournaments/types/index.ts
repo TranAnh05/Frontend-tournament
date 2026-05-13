@@ -58,3 +58,8 @@ export interface TournamentUpdateRequest {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface AssignRefereeRequest {
+  refereeId: number | string;
+  role?: string; // Không bắt buộc, backend đã set mặc định là MAIN
+}

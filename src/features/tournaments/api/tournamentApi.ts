@@ -1,5 +1,5 @@
 import type { ApiResponse } from '@/types/api';
-import { type Tournament, type TournamentDetail } from '../types';
+import { type Tournament, type TournamentDetail ,type  AssignRefereeRequest } from '../types';
 import api from '@/services/api';
 
 export const tournamentApi = {
@@ -41,6 +41,24 @@ export const tournamentApi = {
   // ✨ 2. Thực thi lệnh bốc thăm chia bảng
   executeGroupDraw: (tournamentId: number | string, data: { numberOfGroups: number }) => {
     return api.post(`/tournaments/${tournamentId}/draw`, data);
+  },
+  // ✨ Lấy danh sách trận đấu
+  getMatchesByTournament: (tournamentId: number | string) => {
+    return api.get(`/tournaments/${tournamentId}/matches`);
+  },
+
+  // ✨ Thực thi tự động tạo lịch vòng bảng (Round-Robin)
+  generateGroupSchedule: (tournamentId: number | string) => {
+    return api.post(`/tournaments/${tournamentId}/generate-group-schedule`);
+  },
+  // ✨ Lấy danh sách trọng tài rảnh rỗi cho 1 trận đấu cụ thể
+  getAvailableRefereesForMatch: (matchId: number | string) => {
+    // Sửa lại URL gốc cho khớp với Controller của bạn nhé (VD: /matches/... hoặc /tournaments/matches/...)
+    return api.get(`tournaments/matches/${matchId}/available-referees`); 
+  },
+
+  assignRefereeToMatch: (matchId: number | string, data: AssignRefereeRequest) => {
+    return api.post(`tournaments/matches/${matchId}/referees`, data);
   }
 };
 export const registrationApi = {
