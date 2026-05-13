@@ -16,6 +16,7 @@ export interface TeamLineupDto {
     currentScore: number;
     startingPlayers: PlayerDto[];
     substitutePlayers: PlayerDto[];
+    sentOffPlayers?: PlayerDto[];
 }
 
 export interface MatchDetailResponse {

@@ -17,7 +17,7 @@ import {
     PauseCircle,
     ArrowDownRight,
     ArrowUpRight,
-    Lock, 
+    Lock,
 } from "lucide-react";
 import {
     type MatchDetailResponse,
@@ -370,31 +370,42 @@ export const LiveActionBoard: React.FC<LiveActionBoardProps> = ({
                                         </div>
 
                                         <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                            {event.eventType ===
-                                            "SUBSTITUTION" ? (
+                                            {event.eventType === "SUBSTITUTION" ? (
                                                 <div className="flex flex-col gap-1 mt-0.5">
-                                                    <div className="flex items-center gap-1.5 text-sm font-bold text-gray-900 truncate">
-                                                        <ArrowDownRight
-                                                            size={14}
-                                                            className="text-red-500 shrink-0"
-                                                        />
-                                                        <span className="truncate opacity-70 line-through">
-                                                            {
-                                                                event.primaryAthleteName
-                                                            }
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 text-sm font-bold text-gray-900 truncate">
-                                                        <ArrowUpRight
-                                                            size={14}
-                                                            className="text-green-600 shrink-0"
-                                                        />
-                                                        <span className="truncate">
-                                                            {
-                                                                event.secondaryAthleteName
-                                                            }
-                                                        </span>
-                                                    </div>
+                                                    {/* Nếu có người rời sân (Thay người bình thường) */}
+                                                    {event.primaryAthleteName ? (
+                                                        <>
+                                                            <div className="flex items-center gap-1.5 text-sm font-bold text-gray-900 truncate">
+                                                                <ArrowDownRight
+                                                                    size={14}
+                                                                    className="text-red-500 shrink-0"
+                                                                />
+                                                                <span className="truncate opacity-70 line-through">
+                                                                    {event.primaryAthleteName}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5 text-sm font-bold text-gray-900 truncate">
+                                                                <ArrowUpRight
+                                                                    size={14}
+                                                                    className="text-green-600 shrink-0"
+                                                                />
+                                                                <span className="truncate">
+                                                                    {event.secondaryAthleteName}
+                                                                </span>
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        /* Nếu KHÔNG có người rời sân (Bổ sung người Futsal) */
+                                                        <div className="flex items-center gap-1.5 text-sm font-bold text-green-700 truncate bg-green-50 w-fit px-2 py-0.5 rounded-md border border-green-100">
+                                                            <ArrowUpRight
+                                                                size={14}
+                                                                className="text-green-600 shrink-0"
+                                                            />
+                                                            <span className="truncate">
+                                                                Bổ sung: {event.secondaryAthleteName}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ) : event.primaryAthleteName ? (
                                                 <>

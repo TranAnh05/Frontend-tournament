@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { X } from "lucide-react";
+import { X, UserMinus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { type MatchDetailResponse } from "../../types/matchAction";
 
@@ -23,13 +23,11 @@ export const MatchEventModal: React.FC<MatchEventModalProps> = ({
     isLoading,
 }) => {
     const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
-    const [primaryAthleteId, setPrimaryAthleteId] = useState<number | null>(
-        null,
-    );
-    const [secondaryAthleteId, setSecondaryAthleteId] = useState<number | null>(
-        null,
-    );
+    const [primaryAthleteId, setPrimaryAthleteId] = useState<number | null>(null);
+    const [secondaryAthleteId, setSecondaryAthleteId] = useState<number | null>(null);
     const [description, setDescription] = useState("");
+    
+    const [isAddingPlayerOnly, setIsAddingPlayerOnly] = useState(false);
 
     // Reset form mỗi khi mở modal
     useEffect(() => {
@@ -38,18 +36,15 @@ export const MatchEventModal: React.FC<MatchEventModalProps> = ({
             setPrimaryAthleteId(null);
             setSecondaryAthleteId(null);
             setDescription("");
+            setIsAddingPlayerOnly(false); // Reset cờ bổ sung người
         }
     }, [isOpen]);
 
     const isGoalGroup = ["GOAL", "PT_2", "PT_3"].includes(eventType);
     const isOwnGoal = eventType === "OWN_GOAL";
     const isSubstitution = eventType === "SUBSTITUTION";
-    const isCardOrFoul = ["YELLOW_CARD", "RED_CARD", "FOUL"].includes(
-        eventType,
-    );
-    const isTeamEventOnly = ["TIMEOUT", "VAR_CHALLENGE", "INJURY"].includes(
-        eventType,
-    );
+    const isCardOrFoul = ["YELLOW_CARD", "RED_CARD", "FOUL"].includes(eventType);
+    const isTeamEventOnly = ["TIMEOUT", "VAR_CHALLENGE", "INJURY"].includes(eventType);
 
     // Lấy danh sách cầu thủ của đội đang được chọn
     const activeTeamData = useMemo(() => {
@@ -66,7 +61,8 @@ export const MatchEventModal: React.FC<MatchEventModalProps> = ({
             eventType,
             eventTime,
             clubId: selectedTeamId,
-            primaryAthleteId,
+            // Nếu đánh dấu Bổ sung người -> primary (người ra sân) gửi null
+            primaryAthleteId: (isSubstitution && isAddingPlayerOnly) ? null : primaryAthleteId,
             secondaryAthleteId,
             description,
         });
@@ -76,7 +72,8 @@ export const MatchEventModal: React.FC<MatchEventModalProps> = ({
     const isSubmitDisabled =
         !selectedTeamId ||
         ((isGoalGroup || isOwnGoal || isCardOrFoul) && !primaryAthleteId) ||
-        (isSubstitution && (!primaryAthleteId || !secondaryAthleteId));
+        // LOGIC VALIDATE MỚI CHO THAY NGƯỜI
+        (isSubstitution && (!secondaryAthleteId || (!isAddingPlayerOnly && !primaryAthleteId)));
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
@@ -117,6 +114,7 @@ export const MatchEventModal: React.FC<MatchEventModalProps> = ({
                                         setSelectedTeamId(team.clubId);
                                         setPrimaryAthleteId(null);
                                         setSecondaryAthleteId(null);
+                                        setIsAddingPlayerOnly(false);
                                     }}
                                     className={`p-3 rounded-xl border-2 font-bold text-sm flex flex-col items-center justify-center gap-2 transition-all ${
                                         selectedTeamId === team.clubId
@@ -138,35 +136,55 @@ export const MatchEventModal: React.FC<MatchEventModalProps> = ({
                             {/* NẾU LÀ THAY NGƯỜI */}
                             {isSubstitution ? (
                                 <>
-                                    <div>
-                                        <label className="block text-sm font-bold text-red-600 mb-2">
-                                            Người RỜI SÂN (Từ đội hình chính) *
+                                    {/* CHỨC NĂNG BỔ SUNG NGƯỜI */}
+                                    <div className="flex items-center gap-2 mb-2 bg-blue-50 p-3 rounded-xl border border-blue-100">
+                                        <input
+                                            type="checkbox"
+                                            id="bypass-primary"
+                                            checked={isAddingPlayerOnly}
+                                            onChange={(e) => {
+                                                setIsAddingPlayerOnly(e.target.checked);
+                                                setPrimaryAthleteId(null); // Clear lựa chọn người ra
+                                            }}
+                                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+                                        />
+                                        <label htmlFor="bypass-primary" className="text-sm font-bold text-blue-800 cursor-pointer select-none">
+                                            Bổ sung người (Futsal: Sau thẻ đỏ 2 phút)
                                         </label>
-                                        <select
-                                            className="w-full p-3 rounded-xl border border-gray-300 bg-white"
-                                            value={primaryAthleteId || ""}
-                                            onChange={(e) =>
-                                                setPrimaryAthleteId(
-                                                    Number(e.target.value),
-                                                )
-                                            }
-                                        >
-                                            <option value="" disabled>
-                                                -- Chọn VĐV --
-                                            </option>
-                                            {activeTeamData.startingPlayers.map(
-                                                (p) => (
-                                                    <option
-                                                        key={p.athleteId}
-                                                        value={p.athleteId}
-                                                    >
-                                                        #{p.jerseyNumber} -{" "}
-                                                        {p.fullName}
-                                                    </option>
-                                                ),
-                                            )}
-                                        </select>
                                     </div>
+
+                                    {!isAddingPlayerOnly && (
+                                        <div>
+                                            <label className="block text-sm font-bold text-red-600 mb-2">
+                                                Người RỜI SÂN (Từ đội hình chính) *
+                                            </label>
+                                            <select
+                                                className="w-full p-3 rounded-xl border border-gray-300 bg-white"
+                                                value={primaryAthleteId || ""}
+                                                onChange={(e) =>
+                                                    setPrimaryAthleteId(
+                                                        Number(e.target.value),
+                                                    )
+                                                }
+                                            >
+                                                <option value="" disabled>
+                                                    -- Chọn VĐV --
+                                                </option>
+                                                {activeTeamData.startingPlayers.map(
+                                                    (p) => (
+                                                        <option
+                                                            key={p.athleteId}
+                                                            value={p.athleteId}
+                                                        >
+                                                            #{p.jerseyNumber} -{" "}
+                                                            {p.fullName}
+                                                        </option>
+                                                    ),
+                                                )}
+                                            </select>
+                                        </div>
+                                    )}
+
                                     <div>
                                         <label className="block text-sm font-bold text-green-600 mb-2">
                                             Người VÀO SÂN (Từ ghế dự bị) *
@@ -270,6 +288,24 @@ export const MatchEventModal: React.FC<MatchEventModalProps> = ({
                                     )}
                                 </>
                             )}
+                        </div>
+                    )}
+
+                    {/* HIỂN THỊ DANH SÁCH CẦU THỦ BỊ ĐUỔI KHỎI SÂN */}
+                    {activeTeamData && activeTeamData.sentOffPlayers && activeTeamData.sentOffPlayers.length > 0 && (
+                        <div className="p-4 bg-red-50 rounded-xl border border-red-100 animate-in fade-in">
+                            <h4 className="text-xs font-black text-red-700 uppercase mb-3 flex items-center gap-1.5">
+                                <UserMinus size={14} />
+                                Đang bị truất quyền thi đấu
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                                {activeTeamData.sentOffPlayers.map(p => (
+                                    <span key={p.athleteId} className="px-2.5 py-1.5 bg-red-100 text-red-500 line-through text-xs font-bold rounded-lg opacity-75 select-none flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                                        #{p.jerseyNumber} - {p.fullName}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
                     )}
 

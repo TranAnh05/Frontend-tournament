@@ -1,12 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, UserPlus, CheckSquare, Square } from "lucide-react";
+import { ArrowLeft, Users, UserPlus, CheckSquare, Square, UserMinus } from "lucide-react"; // 🌟 Import thêm UserMinus
 import { toast } from "react-toastify";
 import { useGetMatchDetail } from "../hooks/match-action/useGetMatchDetail";
 import { matchActionApi } from "../api/matchActionApi";
-import { useMatchTimer } from '../hooks/match-action/useMatchTimer';
-import { type CreateMatchEventRequest, type PlayerDto } from "../types/matchAction";
+import { useMatchTimer } from "../hooks/match-action/useMatchTimer";
+import {
+    type CreateMatchEventRequest,
+    type PlayerDto,
+} from "../types/matchAction";
 import { MatchScoreboard } from "../components/match-action/MatchScoreboard";
 import { PlayerVerificationCard } from "../components/match-action/PlayerVerificationCard";
 import { LiveActionBoard } from "../components/match-action/LiveActionBoard";
@@ -21,40 +24,58 @@ export const RefereeMatchActionPage = () => {
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [isConfirming, setIsConfirming] = useState<boolean>(false);
     const [isStatusChanging, setIsStatusChanging] = useState<boolean>(false);
-    
+
     const [eventModal, setEventModal] = useState<{
         isOpen: boolean;
         eventType: string;
         eventTime: string;
-    }>({ isOpen: false, eventType: '', eventTime: '' });
+    }>({ isOpen: false, eventType: "", eventTime: "" });
     const [isEventSubmitting, setIsEventSubmitting] = useState<boolean>(false);
-    
+
     // Đổi tên để bóc tách trạng thái đang tải ngầm (isFetching)
-    const { data, isLoading, isFetching, refetch } = useGetMatchDetail(Number(matchId));
+    const { data, isLoading, isFetching, refetch } = useGetMatchDetail(
+        Number(matchId),
+    );
     const matchTimer = useMatchTimer(data as any);
 
     // QUẢN LÝ DUYỆT ĐỘI HÌNH
-    const currentTeamLineup = activeTab === "HOME" ? data?.homeTeam : data?.awayTeam;
-    
-    const unconfirmedPlayers = currentTeamLineup 
-        ? [...currentTeamLineup.startingPlayers, ...currentTeamLineup.substitutePlayers].filter((p) => !p.isConfirmed)
+    const currentTeamLineup =
+        activeTab === "HOME" ? data?.homeTeam : data?.awayTeam;
+
+    const unconfirmedPlayers = currentTeamLineup
+        ? [
+              ...currentTeamLineup.startingPlayers,
+              ...currentTeamLineup.substitutePlayers,
+          ].filter((p) => !p.isConfirmed)
         : [];
     const unconfirmedIds = unconfirmedPlayers.map((p) => p.lineupId);
-    const isAllSelected = unconfirmedIds.length > 0 && unconfirmedIds.every((id) => selectedIds.includes(id));
+    const isAllSelected =
+        unconfirmedIds.length > 0 &&
+        unconfirmedIds.every((id) => selectedIds.includes(id));
 
-    const confirmedHomeCount = data?.homeTeam.startingPlayers.filter(p => p.isConfirmed).length || 0;
-    const confirmedAwayCount = data?.awayTeam.startingPlayers.filter(p => p.isConfirmed).length || 0;
+    const confirmedHomeCount =
+        data?.homeTeam.startingPlayers.filter((p) => p.isConfirmed).length || 0;
+    const confirmedAwayCount =
+        data?.awayTeam.startingPlayers.filter((p) => p.isConfirmed).length || 0;
     const canStartMatch = confirmedHomeCount > 0 && confirmedAwayCount > 0;
 
     const handleTogglePlayer = (lineupId: number) => {
-        setSelectedIds((prev) => prev.includes(lineupId) ? prev.filter((id) => id !== lineupId) : [...prev, lineupId]);
+        setSelectedIds((prev) =>
+            prev.includes(lineupId)
+                ? prev.filter((id) => id !== lineupId)
+                : [...prev, lineupId],
+        );
     };
 
     const handleToggleAll = () => {
         if (isAllSelected) {
-            setSelectedIds((prev) => prev.filter((id) => !unconfirmedIds.includes(id)));
+            setSelectedIds((prev) =>
+                prev.filter((id) => !unconfirmedIds.includes(id)),
+            );
         } else {
-            setSelectedIds((prev) => Array.from(new Set([...prev, ...unconfirmedIds])));
+            setSelectedIds((prev) =>
+                Array.from(new Set([...prev, ...unconfirmedIds])),
+            );
         }
     };
 
@@ -62,64 +83,90 @@ export const RefereeMatchActionPage = () => {
         if (selectedIds.length === 0) return;
         setIsConfirming(true);
         try {
-            const response = await matchActionApi.confirmLineups(Number(matchId), { lineupIds: selectedIds });
-            toast.success(response.message || "Đã xác nhận danh sách thành công!");
+            const response = await matchActionApi.confirmLineups(
+                Number(matchId),
+                { lineupIds: selectedIds },
+            );
+            toast.success(
+                response.message || "Đã xác nhận danh sách thành công!",
+            );
             setSelectedIds([]);
             refetch();
         } catch (error: any) {
-            toast.error(error.response?.data?.message || "Có lỗi xảy ra khi xác nhận!");
+            toast.error(
+                error.response?.data?.message || "Có lỗi xảy ra khi xác nhận!",
+            );
         } finally {
             setIsConfirming(false);
         }
     };
 
-    // ĐIỀU HƯỚNG TRẠNG THÁI TRẬN ĐẤU & TẠM DỪNG 
-    const handleChangeMatchStatus = async (targetStatus: string, note?: string) => {
+    // ĐIỀU HƯỚNG TRẠNG THÁI TRẬN ĐẤU & TẠM DỪNG
+    const handleChangeMatchStatus = async (
+        targetStatus: string,
+        note?: string,
+    ) => {
         setIsStatusChanging(true);
         try {
-            // Lấy thời gian hiện tại 
+            // Lấy thời gian hiện tại
             const currentTime = matchTimer.currentFormattedTime;
 
-            if (targetStatus === 'PAUSED' || (targetStatus === 'IN_PROGRESS' && data?.status === 'PAUSED')) {
-                const isPausing = targetStatus === 'PAUSED';
-                const eventType = isPausing ? 'PAUSE_MATCH' : 'RESUME_MATCH';
-                const desc = isPausing ? 'Trọng tài cho tạm dừng trận đấu' : 'Trận đấu được tiếp tục trở lại';
-                
+            if (
+                targetStatus === "PAUSED" ||
+                (targetStatus === "IN_PROGRESS" && data?.status === "PAUSED")
+            ) {
+                const isPausing = targetStatus === "PAUSED";
+                const eventType = isPausing ? "PAUSE_MATCH" : "RESUME_MATCH";
+                const desc = isPausing
+                    ? "Trọng tài cho tạm dừng trận đấu"
+                    : "Trận đấu được tiếp tục trở lại";
+
                 await matchActionApi.createEvent(Number(matchId), {
                     eventType,
                     eventTime: currentTime,
-                    description: desc
+                    description: desc,
                 });
-                
+
                 toast.success(desc);
                 refetch();
                 return;
             }
 
-            await matchActionApi.changeMatchStatus(Number(matchId), { 
+            await matchActionApi.changeMatchStatus(Number(matchId), {
                 targetStatus: targetStatus as any,
                 note: note,
-                eventTime: currentTime 
+                eventTime: currentTime,
             });
-            
-            if (targetStatus === 'IN_PROGRESS' && data?.status === 'SCHEDULED') {
+
+            if (
+                targetStatus === "IN_PROGRESS" &&
+                data?.status === "SCHEDULED"
+            ) {
                 try {
                     await matchActionApi.createEvent(Number(matchId), {
-                        eventType: 'START_PERIOD',
-                        eventTime: currentTime, 
-                        description: `Trọng tài thổi còi bắt đầu ${matchTimer.periodName} 1`
+                        eventType: "START_PERIOD",
+                        eventTime: currentTime,
+                        description: `Trọng tài thổi còi bắt đầu ${matchTimer.periodName} 1`,
                     });
-                    toast.success(`Trận đấu và ${matchTimer.periodName} 1 đã bắt đầu!`);
+                    toast.success(
+                        `Trận đấu và ${matchTimer.periodName} 1 đã bắt đầu!`,
+                    );
                 } catch (err) {
-                    toast.warning(`Đã bắt đầu trận đấu, nhưng lỗi ghi log hiệp 1`); 
+                    toast.warning(
+                        `Đã bắt đầu trận đấu, nhưng lỗi ghi log hiệp 1`,
+                    );
                 }
-            } 
-            else if (targetStatus === 'FINISHED') toast.info("Trận đấu đã kết thúc!");
-            else if (targetStatus === 'CANCELED') toast.error("Trận đấu đã bị hủy.");
-            
-            refetch(); 
+            } else if (targetStatus === "FINISHED")
+                toast.info("Trận đấu đã kết thúc!");
+            else if (targetStatus === "CANCELED")
+                toast.error("Trận đấu đã bị hủy.");
+
+            refetch();
         } catch (error: any) {
-            toast.error(error.response?.data?.message || "Không thể cập nhật trạng thái");
+            toast.error(
+                error.response?.data?.message ||
+                    "Không thể cập nhật trạng thái",
+            );
         } finally {
             setIsStatusChanging(false);
         }
@@ -129,25 +176,35 @@ export const RefereeMatchActionPage = () => {
         setIsStatusChanging(true);
         try {
             await matchActionApi.finalizeMatch(Number(matchId), { note });
-            toast.success("Đã ký duyệt thành công. Bảng xếp hạng đang được cập nhật!");
+            toast.success(
+                "Đã ký duyệt thành công. Bảng xếp hạng đang được cập nhật!",
+            );
             // Refetch để cập nhật UI sang chế độ View-Only
             refetch();
         } catch (error: any) {
-            toast.error(error.response?.data?.message || "Không thể ký duyệt trận đấu");
+            toast.error(
+                error.response?.data?.message || "Không thể ký duyệt trận đấu",
+            );
         } finally {
             setIsStatusChanging(false);
         }
     };
 
-    // GHI NHẬN SỰ KIỆN TRONG TRẬN 
-    const handleFireEvent = async (eventType: string, currentFormattedTime: string) => {
-        if (eventType === 'START_PERIOD' || eventType === 'END_PERIOD') {
+    // GHI NHẬN SỰ KIỆN TRONG TRẬN
+    const handleFireEvent = async (
+        eventType: string,
+        currentFormattedTime: string,
+    ) => {
+        if (eventType === "START_PERIOD" || eventType === "END_PERIOD") {
             setIsEventSubmitting(true);
             try {
                 await matchActionApi.createEvent(Number(matchId), {
                     eventType,
                     eventTime: currentFormattedTime,
-                    description: eventType === 'START_PERIOD' ? `Bắt đầu Hiệp đấu` : `Kết thúc Hiệp đấu`
+                    description:
+                        eventType === "START_PERIOD"
+                            ? `Bắt đầu Hiệp đấu`
+                            : `Kết thúc Hiệp đấu`,
                 });
                 toast.success("Cập nhật thời gian thành công!");
                 refetch();
@@ -163,7 +220,7 @@ export const RefereeMatchActionPage = () => {
         setEventModal({
             isOpen: true,
             eventType: eventType,
-            eventTime: currentFormattedTime 
+            eventTime: currentFormattedTime,
         });
     };
 
@@ -172,10 +229,12 @@ export const RefereeMatchActionPage = () => {
         try {
             await matchActionApi.createEvent(Number(matchId), payload);
             toast.success("Đã ghi nhận sự kiện!");
-            setEventModal(prev => ({ ...prev, isOpen: false }));
-            refetch(); 
+            setEventModal((prev) => ({ ...prev, isOpen: false }));
+            refetch();
         } catch (error: any) {
-            toast.error(error.response?.data?.message || "Lỗi ghi nhận sự kiện");
+            toast.error(
+                error.response?.data?.message || "Lỗi ghi nhận sự kiện",
+            );
         } finally {
             setIsEventSubmitting(false);
         }
@@ -185,7 +244,9 @@ export const RefereeMatchActionPage = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
                 <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-gray-500 font-medium">Đang tải dữ liệu trận đấu...</p>
+                <p className="text-gray-500 font-medium">
+                    Đang tải dữ liệu trận đấu...
+                </p>
             </div>
         );
     }
@@ -196,11 +257,16 @@ export const RefereeMatchActionPage = () => {
         <div className="min-h-screen bg-gray-50 pb-32">
             {/* Header Navigation */}
             <div className="bg-white px-4 py-3 flex items-center gap-3 border-b border-gray-100">
-                <button onClick={() => navigate(-1)} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                >
                     <ArrowLeft size={20} className="text-gray-600" />
                 </button>
-                <span className="text-sm font-bold text-gray-800 truncate">Phòng điều khiển trận đấu</span>
-                
+                <span className="text-sm font-bold text-gray-800 truncate">
+                    Phòng điều khiển trận đấu
+                </span>
+
                 {isFetching && (
                     <div className="ml-auto w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                 )}
@@ -213,45 +279,133 @@ export const RefereeMatchActionPage = () => {
                     <>
                         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
                             <div className="bg-white p-1 rounded-xl flex w-full md:w-[400px] border border-gray-200 shadow-sm shrink-0">
-                                <button onClick={() => setActiveTab("HOME")} className={cn("flex-1 py-2 text-sm font-semibold rounded-lg transition-all", activeTab === "HOME" ? "bg-blue-600 text-white shadow-md" : "text-gray-500")}>
+                                <button
+                                    onClick={() => setActiveTab("HOME")}
+                                    className={cn(
+                                        "flex-1 py-2 text-sm font-semibold rounded-lg transition-all",
+                                        activeTab === "HOME"
+                                            ? "bg-blue-600 text-white shadow-md"
+                                            : "text-gray-500",
+                                    )}
+                                >
                                     {data.homeTeam.clubName}
                                 </button>
-                                <button onClick={() => setActiveTab("AWAY")} className={cn("flex-1 py-2 text-sm font-semibold rounded-lg transition-all", activeTab === "AWAY" ? "bg-blue-600 text-white shadow-md" : "text-gray-500")}>
+                                <button
+                                    onClick={() => setActiveTab("AWAY")}
+                                    className={cn(
+                                        "flex-1 py-2 text-sm font-semibold rounded-lg transition-all",
+                                        activeTab === "AWAY"
+                                            ? "bg-blue-600 text-white shadow-md"
+                                            : "text-gray-500",
+                                    )}
+                                >
                                     {data.awayTeam.clubName}
                                 </button>
                             </div>
 
                             {unconfirmedIds.length > 0 && (
-                                <button onClick={handleToggleAll} className="flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-all w-full md:w-auto justify-center">
-                                    {isAllSelected ? <><CheckSquare size={18} className="text-blue-600" /> Bỏ chọn tất cả</> : <><Square size={18} className="text-gray-400" /> Duyệt tất cả</>}
+                                <button
+                                    onClick={handleToggleAll}
+                                    className="flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-all w-full md:w-auto justify-center"
+                                >
+                                    {isAllSelected ? (
+                                        <>
+                                            <CheckSquare
+                                                size={18}
+                                                className="text-blue-600"
+                                            />{" "}
+                                            Bỏ chọn tất cả
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Square
+                                                size={18}
+                                                className="text-gray-400"
+                                            />{" "}
+                                            Duyệt tất cả
+                                        </>
+                                    )}
                                 </button>
                             )}
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {/* CỘT 1: ĐỘI HÌNH CHÍNH */}
                             <section>
                                 <div className="flex items-center gap-2 mb-4 px-1 border-b border-gray-200 pb-2">
-                                    <Users size={18} className="text-blue-600" />
-                                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Đội hình chính thức</h3>
+                                    <Users
+                                        size={18}
+                                        className="text-blue-600"
+                                    />
+                                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+                                        Đội hình chính thức
+                                    </h3>
                                 </div>
                                 <div className="grid grid-cols-1 gap-3">
-                                    {currentTeamLineup?.startingPlayers.map((player: PlayerDto) => (
-                                        <PlayerVerificationCard key={player.lineupId} player={player} isSelected={selectedIds.includes(player.lineupId)} onToggle={handleTogglePlayer} />
-                                    ))}
+                                    {currentTeamLineup?.startingPlayers.map(
+                                        (player: PlayerDto) => (
+                                            <PlayerVerificationCard
+                                                key={player.lineupId}
+                                                player={player}
+                                                isSelected={selectedIds.includes(
+                                                    player.lineupId,
+                                                )}
+                                                onToggle={handleTogglePlayer}
+                                            />
+                                        ),
+                                    )}
                                 </div>
                             </section>
 
+                            {/* CỘT 2: DỰ BỊ */}
                             <section>
                                 <div className="flex items-center gap-2 mb-4 px-1 border-b border-gray-200 pb-2">
-                                    <UserPlus size={18} className="text-orange-500" />
-                                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Danh sách dự bị</h3>
+                                    <UserPlus
+                                        size={18}
+                                        className="text-orange-500"
+                                    />
+                                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+                                        Danh sách dự bị
+                                    </h3>
                                 </div>
                                 <div className="grid grid-cols-1 gap-3">
-                                    {currentTeamLineup?.substitutePlayers.map((player: PlayerDto) => (
-                                        <PlayerVerificationCard key={player.lineupId} player={player} isSelected={selectedIds.includes(player.lineupId)} onToggle={handleTogglePlayer} />
-                                    ))}
+                                    {currentTeamLineup?.substitutePlayers.map(
+                                        (player: PlayerDto) => (
+                                            <PlayerVerificationCard
+                                                key={player.lineupId}
+                                                player={player}
+                                                isSelected={selectedIds.includes(
+                                                    player.lineupId,
+                                                )}
+                                                onToggle={handleTogglePlayer}
+                                            />
+                                        ),
+                                    )}
                                 </div>
                             </section>
+
+                            {currentTeamLineup?.sentOffPlayers && currentTeamLineup.sentOffPlayers.length > 0 && (
+                                <section className="col-span-1 md:col-span-2 mt-2">
+                                    <div className="flex items-center gap-2 mb-4 px-1 border-b border-red-200 pb-2">
+                                        <UserMinus size={18} className="text-red-500" />
+                                        <h3 className="text-sm font-bold text-red-700 uppercase tracking-wider">
+                                            Truất quyền thi đấu
+                                        </h3>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 opacity-60 grayscale pointer-events-none select-none">
+                                        {currentTeamLineup.sentOffPlayers.map(
+                                            (player: PlayerDto) => (
+                                                <PlayerVerificationCard
+                                                    key={player.lineupId}
+                                                    player={player}
+                                                    isSelected={false} // Luôn luôn tắt trạng thái chọn
+                                                    onToggle={() => {}} // Khóa thao tác
+                                                />
+                                            ),
+                                        )}
+                                    </div>
+                                </section>
+                            )}
                         </div>
                     </>
                 ) : (
@@ -259,7 +413,12 @@ export const RefereeMatchActionPage = () => {
                         <LiveActionBoard
                             match={data}
                             timer={matchTimer}
-                            onActionClick={(actionCode) => handleFireEvent(actionCode, matchTimer.currentFormattedTime)}
+                            onActionClick={(actionCode) =>
+                                handleFireEvent(
+                                    actionCode,
+                                    matchTimer.currentFormattedTime,
+                                )
+                            }
                         />
                     </div>
                 )}
@@ -268,11 +427,13 @@ export const RefereeMatchActionPage = () => {
             {/* Modal Ghi Nhận Sự Kiện */}
             <MatchEventModal
                 isOpen={eventModal.isOpen}
-                onClose={() => setEventModal(prev => ({ ...prev, isOpen: false }))}
+                onClose={() =>
+                    setEventModal((prev) => ({ ...prev, isOpen: false }))
+                }
                 onSubmit={handleSubmitEventModal}
                 match={data}
                 eventType={eventModal.eventType}
-                eventTime={eventModal.eventTime} 
+                eventTime={eventModal.eventTime}
                 isLoading={isEventSubmitting}
             />
 
@@ -286,7 +447,7 @@ export const RefereeMatchActionPage = () => {
                 canStartMatch={canStartMatch}
                 onConfirmLineup={handleConfirmSelected}
                 onChangeStatus={handleChangeMatchStatus}
-                onFinalizeMatch={handleFinalizeMatch} 
+                onFinalizeMatch={handleFinalizeMatch}
             />
         </div>
     );
