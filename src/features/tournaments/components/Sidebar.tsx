@@ -29,7 +29,7 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
     { path: '/organizer', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/organizer/tournaments', label: 'Quản lý Giải đấu', icon: Trophy },
     { path: '/organizer/registrations', label: 'Quản lý Đăng ký & Đội', icon: Users },
-    { path: '/schedule', label: 'Bảng đấu & Lịch trình', icon: CalendarDays },
+    { path: '/organizer/groups-schedule', label: 'Bảng đấu & Lịch trình', icon: CalendarDays },
     { path: '/operations', label: 'Vận hành & Sự cố', icon: AlertTriangle },
   ];
 

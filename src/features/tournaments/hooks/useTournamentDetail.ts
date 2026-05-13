@@ -4,29 +4,24 @@ import { useParams } from 'react-router-dom';
 import { tournamentApi } from '../api/tournamentApi';
 import type { TournamentDetail } from '../types'; // Đảm bảo đã export interface này
 
-export const useTournamentDetail = () => {
-  const { id } = useParams<{ id: string }>();
-  
-  // 1. Khai báo state với kiểu TournamentDetail
-  const [data, setData] = useState<TournamentDetail | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+export const useTournamentDetail = (id: number | string | undefined | null) => {
+  const [detail, setDetail] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // ✨ LỚP BẢO VỆ TUYỆT ĐỐI: 
+    // Nếu id là undefined (lúc mới load), hoặc NaN, hoặc null -> Lập tức dừng lại, không gọi API!
+    if (!id || id === 'undefined' || isNaN(Number(id))) {
+      setDetail(null);
+      return;
+    }
+
     const fetchDetail = async () => {
-      if (!id) return;
+      setLoading(true);
       try {
-        setLoading(true);
-        
-        // 2. Ép kiểu response về any để truy cập trường 'result'
-        // Hoặc dùng: const response = await tournamentApi.getById(Number(id)) as any;
-        const response: any = await tournamentApi.getTournamentById(Number(id));
-        
-        // 3. Lấy dữ liệu từ trường 'result' do Backend bọc lại
-        const result = response.result || response.data?.result;
-        
-        if (result) {
-          setData(result as TournamentDetail);
-        }
+        const res = await tournamentApi.getTournamentById(Number(id));
+       
+        setDetail(res.result);
       } catch (error) {
         console.error("Lỗi khi lấy chi tiết giải đấu:", error);
       } finally {
@@ -35,8 +30,7 @@ export const useTournamentDetail = () => {
     };
 
     fetchDetail();
-  }, [id]);
+  }, [id]); // Hook chỉ chạy lại khi giá trị 'id' thay đổi
 
-  // Trả về data đã được định nghĩa kiểu
-  return { data, loading };
+  return { detail, loading };
 };

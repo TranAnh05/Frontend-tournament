@@ -21,6 +21,7 @@ import RefereeMatchActionPage from "@/features/referee/pages/RefereeMatchActionP
 import MainLayout from '../features/tournaments/pages/ORGANIZER/MainLayout';
 import DashboardPage from '../features/tournaments/pages/ORGANIZER/DashboardPage';
 import Regis from '../features/tournaments/pages/ORGANIZER/RegistrationPage';
+import GroupsAndSchedulePage from '../features/tournaments/pages/ORGANIZER/GroupsAndSchedulePage';
 
 import AthleteDashboardLayout from '@/features/athlete/layout/AthleteDashboardLayout';
 import ClubListPage from '@/features/athlete/pages/ClubListPage';
@@ -124,6 +125,10 @@ export const router = createBrowserRouter([
             {
                 path: "/organizer/registrations",
                 element: <Regis/>,
+            },
+            {
+                path: "/organizer/groups-schedule",
+                element: <GroupsAndSchedulePage />,
             }
              ],
                  },
