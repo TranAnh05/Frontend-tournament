@@ -21,6 +21,7 @@ import RefereeMatchActionPage from "@/features/referee/pages/RefereeMatchActionP
 import MainLayout from '../features/tournaments/pages/ORGANIZER/MainLayout';
 import DashboardPage from '../features/tournaments/pages/ORGANIZER/DashboardPage';
 import Regis from '../features/tournaments/pages/ORGANIZER/RegistrationPage';
+import GroupsAndSchedulePage from '../features/tournaments/pages/ORGANIZER/GroupsAndSchedulePage';
 
 const AthleteDashboard = () => (
     <div className="p-10">
@@ -113,6 +114,10 @@ export const router = createBrowserRouter([
             {
                 path: "/organizer/registrations",
                 element: <Regis/>,
+            },
+            {
+                path: "/organizer/groups-schedule",
+                element: <GroupsAndSchedulePage />,
             }
              ],
                  },

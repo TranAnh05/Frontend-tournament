@@ -29,6 +29,19 @@ export const tournamentApi = {
 
   startTournament: (id: number) => api.patch(`/tournaments/${id}/start`),
   finishTournament: (id: number) => api.patch(`/tournaments/${id}/finish`),
+   getReadyForGrouping: (page: number, size: number) => 
+    api.get(`/tournaments/ready-for-grouping`, { params: { page, size } }),
+   
+// ✨ 1. Lấy danh sách các bảng đấu sau khi bốc thăm
+  getGroupsByTournament: (tournamentId: number | string) => {
+    // Lưu ý: Đổi `axiosClient` thành biến instance axios thực tế của bạn (ví dụ: api, axiosInstance...)
+    return api.get(`/tournaments/${tournamentId}/groups`);
+  },
+
+  // ✨ 2. Thực thi lệnh bốc thăm chia bảng
+  executeGroupDraw: (tournamentId: number | string, data: { numberOfGroups: number }) => {
+    return api.post(`/tournaments/${tournamentId}/draw`, data);
+  }
 };
 export const registrationApi = {
   // Lấy danh sách giải đang mở đăng ký
@@ -47,6 +60,6 @@ export const registrationApi = {
     
   rejectRegistration: (tournamentId: number, regId: number, reason: string) => 
     api.patch(`/tournaments/${tournamentId}/registrations/${regId}/reject`, { reason }),
+ 
 
-  
 };
