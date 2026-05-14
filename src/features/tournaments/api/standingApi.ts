@@ -1,6 +1,6 @@
 import api from '@/services/api';
 import { type ApiResponse } from '@/types/api';
-import { type TournamentLookupResponse, type TournamentStandingResponse } from '../types/standing';
+import { type OverallStandingResponse, type TournamentLookupResponse, type TournamentStandingResponse } from '../types/standing';
 
 export const standingApi = {
     /**
@@ -14,4 +14,8 @@ export const standingApi = {
     getStandingContextTournaments: (): Promise<ApiResponse<TournamentLookupResponse[]>> => {
         return api.get('/organizer/tournaments/standing-context');
     },
+
+    getOverallStandings: (tournamentId: number): Promise<ApiResponse<OverallStandingResponse>> => {
+        return api.get(`/organizer/tournaments/${tournamentId}/overall-standings`);
+    }
 };
