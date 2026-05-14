@@ -8,6 +8,7 @@ import { Trophy, CalendarDays, Users, LayoutList, CheckCircle, Clock } from 'luc
 
  import ScheduleTab from '../../components/ScheduleTab';
  import RefereeTab from '../../components/RefereeTab';
+ import KnockoutTab from '../../components/KnockoutTab';
 
 const GroupsAndSchedulePage = () => {
   // --- STATE DANH SÁCH GIẢI ---
@@ -97,6 +98,17 @@ const GroupsAndSchedulePage = () => {
                   matches={matches} 
                   loading={loadingMatches} 
                   onRefresh={fetchAllMatches} 
+                />,
+    },
+    {
+      key: 'knockout',
+      label: <span className="flex items-center gap-2"><Trophy size={18} /> Vòng Knockout</span>,
+      children: <KnockoutTab 
+                  tournamentId={selectedTour?.id} 
+                  matches={matches} 
+                  loading={loadingMatches} 
+                  onRefresh={fetchAllMatches} 
+                  clubs={tourDetail?.approvedClubs || []}
                 />,
     }
   ];
