@@ -13,6 +13,9 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
 }) => {
     const { displayTime, periodName, currentPeriod, matchState } = timer;
     const isLive = match.status === "IN_PROGRESS";
+    
+    // 🌟 PHÂN NHÁNH LOGIC: Xác định loại đồng hồ/thể thức của môn
+    const isSetBased = match.sportRules?.CLOCK_TYPE === "SET_BASED";
 
     const renderStatusBadge = () => {
         if (match.status === "IN_PROGRESS") {
@@ -89,10 +92,10 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
                 </div>
 
                 {/* Khối tỷ số trung tâm */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
                     {/* Đội Nhà */}
-                    <div className="flex flex-col items-center w-1/3">
-                        <div className="w-10 h-10 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden mb-1">
+                    <div className="flex flex-col items-center w-full sm:w-1/3">
+                        <div className="w-10 h-10 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden mb-1 shadow-sm">
                             {match.homeTeam.logoUrl ? (
                                 <img
                                     src={match.homeTeam.logoUrl}
@@ -108,29 +111,67 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
                         </span>
                     </div>
 
-                    {/* Tỷ số */}
-                    <div className="flex flex-col items-center justify-center w-1/3">
-                        <div className="text-3xl font-black text-gray-900 tracking-widest bg-gray-50 px-4 py-1 rounded-xl">
-                            {match.homeTeam.currentScore} -{" "}
-                            {match.awayTeam.currentScore}
+                    {/* KHU VỰC TỶ SỐ (CENTER SCORE AREA) */}
+                    <div className="flex flex-col items-center justify-center w-full sm:w-1/3">
+                        
+                        {/* 1. Tỷ số Tổng (Match Score) */}
+                        <div className="text-3xl font-black text-gray-900 tracking-widest bg-gray-50 px-4 py-1.5 rounded-xl border border-gray-100 shadow-sm relative">
+                            {match.homeTeam.matchScore || 0} - {match.awayTeam.matchScore || 0}
+                            
+                            {/* Chú thích nhỏ trên đầu nếu là dạng Set */}
+                            {isSetBased && (
+                                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-blue-100 text-blue-700 text-[9px] font-black uppercase px-2 py-0.5 rounded-full whitespace-nowrap">
+                                    Tỷ số Set
+                                </span>
+                            )}
                         </div>
 
-                        <div className="bg-gray-900 text-white px-3 py-1 rounded-md flex flex-col items-center shadow-inner">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-0.5">
+                        {/* 2. Hiển thị UI đặc thù cho các môn đánh theo Set (Cầu lông, Bóng bàn) */}
+                        {isSetBased && (
+                            <div className="mt-2.5 flex flex-col items-center w-full">
+                                {/* Tỷ số Set hiện tại đang đánh */}
+                                {isLive && matchState !== "WAITING_START" && matchState !== "HALFTIME" && (
+                                    <div className="text-2xl font-bold text-blue-600 tracking-wider leading-none mb-2">
+                                        {match.homeTeam.currentPeriodScore || 0} <span className="text-gray-300 mx-1">:</span> {match.awayTeam.currentPeriodScore || 0}
+                                    </div>
+                                )}
+
+                                {/* Lịch sử các Set đã/đang đánh (Period Scores) */}
+                                {match.periodScores && match.periodScores.length > 0 && (
+                                    <div className="flex flex-wrap justify-center gap-1.5 mb-1.5">
+                                        {match.periodScores.map((ps, idx) => (
+                                            <div 
+                                                key={idx} 
+                                                className={`flex flex-col items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                                                    ps.isFinished 
+                                                        ? "bg-gray-100 text-gray-500 border border-gray-200" // Set cũ
+                                                        : "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm" // Set hiện tại
+                                                }`}
+                                                title={ps.periodName}
+                                            >
+                                                <span>{ps.homeScore}-{ps.awayScore}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* 3. Vùng hiển thị Giờ / Thông tin Hiệp đấu */}
+                        <div className="bg-gray-900 text-white px-4 py-1.5 rounded-lg flex flex-col items-center shadow-inner mt-2 w-max">
+                            <span className="text-[10px] font-bold text-blue-300 uppercase tracking-widest leading-none mb-1">
                                 {periodName} {currentPeriod}
                             </span>
-                            <span className="font-mono text-lg font-black leading-none">
+                            <span className="font-mono text-lg font-black leading-none tracking-wider">
                                 {displayTime}
                             </span>
                         </div>
 
                         {/* Chỉ hiện giờ dự kiến khi trận đấu chưa bắt đầu */}
                         {!isLive && match.status === "SCHEDULED" && (
-                            <span className="text-xs font-medium text-gray-500 mt-1 flex items-center gap-1">
-                                <Clock size={12} />
-                                {new Date(
-                                    match.scheduledTime,
-                                ).toLocaleTimeString("vi-VN", {
+                            <span className="text-xs font-medium text-gray-500 mt-2 flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
+                                <Clock size={12} className="text-gray-400" />
+                                Dự kiến: {new Date(match.scheduledTime).toLocaleTimeString("vi-VN", {
                                     hour: "2-digit",
                                     minute: "2-digit",
                                 })}
@@ -139,8 +180,8 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
                     </div>
 
                     {/* Đội Khách */}
-                    <div className="flex flex-col items-center w-1/3">
-                        <div className="w-10 h-10 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden mb-1">
+                    <div className="flex flex-col items-center w-full sm:w-1/3">
+                        <div className="w-10 h-10 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden mb-1 shadow-sm">
                             {match.awayTeam.logoUrl ? (
                                 <img
                                     src={match.awayTeam.logoUrl}
