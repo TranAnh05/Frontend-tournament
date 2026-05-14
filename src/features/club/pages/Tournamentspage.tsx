@@ -7,25 +7,29 @@ import { useUiStore } from "../store/uiStore";
 import { Card, Modal, Field, Input, Btn } from "../components/common/UIComponents";
 
 // ── Mapping môn thể thao → danh sách vị trí phù hợp ─────────────────────────
-// Key là sportName (toLowerCase, trim) hoặc một phần tên
-const SPORT_POSITIONS: Record<string, string[]> = {
-  "bóng đá":   ["Thủ môn", "Trung vệ", "Hậu vệ cánh", "Tiền vệ phòng ngự",
-                 "Tiền vệ trung tâm", "Tiền vệ công", "Tiền vệ cánh",
-                 "Tiền đạo cánh", "Tiền đạo cắm", "Trung phong"],
-  "bóng rổ": ["Hậu vệ tổ chức", "Hậu vệ công", "Tiền phong nhỏ", "Tiền phong lớn", "Trung phong"],
-  "cầu lông":  ["Đơn nam", "Đơn nữ", "Đôi nam", "Đôi nữ", "Đôi hỗn hợp"],
-  "bóng chuyền": ["Chủ công", "Phụ công", "Libero", "Chuyền hai", "Đối chuyền"],
-  "tennis":    ["Đơn nam", "Đơn nữ", "Đôi nam", "Đôi nữ"],
-  "bơi lội":   ["Tự do", "Bướm", "Ngửa", "Ếch", "Hỗn hợp"],
+const SPORT_CONFIG: Record<string, { positions: string[] }> = {
+  "Bóng đá sân 7": {
+    positions: ["Thủ môn", "Trung vệ", "Hậu vệ cánh", "Tiền vệ phòng ngự",
+                "Tiền vệ trung tâm", "Tiền vệ công", "Tiền vệ cánh",
+                "Tiền đạo cánh", "Tiền đạo cắm", "Trung phong"],
+  },
+  "Bóng rổ 5x5": {
+    positions: ["Trung phong", "Trung phong nhỏ", "Tiền phong",
+                "Hậu vệ kiến thiết", "Hậu vệ ném xa"],
+  },
+  "Cầu lông": {
+    positions: ["Đơn nam", "Đơn nữ", "Đôi nam", "Đôi nữ", "Đôi hỗn hợp"],
+  },
 };
+const DEFAULT_CONFIG = { positions: [] as string[] };
 
 // Lấy danh sách positions hợp lệ dựa trên sportName
 function getPositionsForSport(sportName: string): string[] {
   const lower = sportName.toLowerCase();
-  for (const [key, positions] of Object.entries(SPORT_POSITIONS)) {
-    if (lower.includes(key)) return positions;
+  for (const [key, cfg] of Object.entries(SPORT_CONFIG)) {
+    if (lower.includes(key.toLowerCase())) return cfg.positions;
   }
-  return []; // không có filter → hiển thị tất cả
+  return [];
 }
 
 // Lọc VĐV phù hợp với môn thể thao
@@ -49,23 +53,23 @@ function filterAthletesBySport(members: ClubMemberResponse[], sportName: string)
 }
 
 const STATUS_STYLE: Record<string, { label: string; cls: string }> = {
-  DRAFT:             { label: "Nháp",          cls: "bg-gray-100 text-gray-500" },
-  REGISTRATION_OPEN: { label: "Mở đăng ký",    cls: "bg-blue-50 text-blue-600" },
-  ONGOING:           { label: "Đang diễn ra",  cls: "bg-emerald-50 text-emerald-700" },
-  FINISHED:          { label: "Kết thúc",      cls: "bg-gray-100 text-gray-400" },
-  CANCELED:          { label: "Đã hủy",        cls: "bg-red-50 text-red-400" },
+  DRAFT: { label: "Nháp", cls: "bg-gray-100 text-gray-500" },
+  REGISTRATION_OPEN: { label: "Mở đăng ký", cls: "bg-blue-50 text-blue-600" },
+  ONGOING: { label: "Đang diễn ra", cls: "bg-emerald-50 text-emerald-700" },
+  FINISHED: { label: "Kết thúc", cls: "bg-gray-100 text-gray-400" },
+  CANCELED: { label: "Đã hủy", cls: "bg-red-50 text-red-400" },
 };
 
 const REG_STYLE: Record<string, { label: string; cls: string }> = {
-  PENDING:   { label: "⏳ Chờ duyệt", cls: "bg-yellow-50 text-yellow-600" },
-  APPROVED:  { label: "✅ Đã duyệt",  cls: "bg-emerald-50 text-emerald-700" },
-  REJECTED:  { label: "❌ Từ chối",   cls: "bg-red-50 text-red-500" },
-  WITHDRAWN: { label: "↩ Đã rút",    cls: "bg-gray-100 text-gray-500" },
+  PENDING: { label: "⏳ Chờ duyệt", cls: "bg-yellow-50 text-yellow-600" },
+  APPROVED: { label: "✅ Đã duyệt", cls: "bg-emerald-50 text-emerald-700" },
+  REJECTED: { label: "❌ Từ chối", cls: "bg-red-50 text-red-500" },
+  WITHDRAWN: { label: "↩ Đã rút", cls: "bg-gray-100 text-gray-500" },
 };
 
 const FORMAT_LABEL: Record<string, string> = {
   ROUND_ROBIN: "Vòng tròn",
-  KNOCKOUT:    "Loại trực tiếp",
+  KNOCKOUT: "Loại trực tiếp",
   GROUP_STAGE: "Vòng bảng",
 };
 
@@ -180,6 +184,8 @@ export default function TournamentsPage() {
     });
   };
 
+  const sportConfig = SPORT_CONFIG[selectedTournament?.sportName ?? ""] ?? DEFAULT_CONFIG;
+
   const updateRosterEntry = (athleteId: number, field: keyof RosterEntry, value: string) => {
     setRosterEntries(prev => ({ ...prev, [athleteId]: { ...prev[athleteId], [field]: value } }));
   };
@@ -217,6 +223,11 @@ export default function TournamentsPage() {
     ? getPositionsForSport(selectedTournament.sportName)
     : [];
 
+  // Tất cả positions từ SPORT_CONFIG (dùng cho optgroup "Khác")
+  const allPositions = Object.values(SPORT_CONFIG)
+    .flatMap(cfg => cfg.positions)
+    .filter((p, i, arr) => arr.indexOf(p) === i);
+
   const renderAthleteCard = (m: ClubMemberResponse, isSuitable: boolean) => {
     const selected = selectedAthletes.has(m.athleteId);
     const entry = rosterEntries[m.athleteId];
@@ -246,9 +257,9 @@ export default function TournamentsPage() {
           <span className={`text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0
             ${m.clubRole === "CAPTAIN" ? "bg-yellow-100 text-yellow-700" :
               m.clubRole === "HEAD_COACH" ? "bg-purple-100 text-purple-700" :
-              "bg-gray-100 text-gray-500"}`}>
+                "bg-gray-100 text-gray-500"}`}>
             {m.clubRole === "CAPTAIN" ? "⭐ Đội trưởng" :
-             m.clubRole === "HEAD_COACH" ? "👨‍💼 HLV" : "Thành viên"}
+              m.clubRole === "HEAD_COACH" ? "👨‍💼 HLV" : "Thành viên"}
           </span>
         </div>
 
@@ -268,24 +279,19 @@ export default function TournamentsPage() {
                 onChange={e => updateRosterEntry(m.athleteId, "position", e.target.value)}
                 className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400">
                 <option value="">-- Chọn --</option>
-                {/* Hiện vị trí phù hợp với môn trước */}
-                {positions.length > 0 && (
-                  <optgroup label={`✅ ${selectedTournament?.sportName}`}>
-                    {positions.map(p => <option key={p} value={p}>{p}</option>)}
-                  </optgroup>
-                )}
-                {positions.length > 0 && (
-                  <optgroup label="Khác">
-                    {Object.values(SPORT_POSITIONS).flat()
-                      .filter(p => !positions.includes(p))
-                      .filter((p, i, arr) => arr.indexOf(p) === i)
-                      .map(p => <option key={p} value={p}>{p}</option>)}
-                  </optgroup>
-                )}
-                {positions.length === 0 && (
-                  Object.values(SPORT_POSITIONS).flat()
-                    .filter((p, i, arr) => arr.indexOf(p) === i)
-                    .map(p => <option key={p} value={p}>{p}</option>)
+                {positions.length > 0 ? (
+                  <>
+                    <optgroup label={`✅ ${selectedTournament?.sportName}`}>
+                      {sportConfig.positions.map(p => <option key={p} value={p}>{p}</option>)}
+                    </optgroup>
+                    <optgroup label="Khác">
+                      {allPositions
+                        .filter(p => !positions.includes(p))
+                        .map(p => <option key={p} value={p}>{p}</option>)}
+                    </optgroup>
+                  </>
+                ) : (
+                  allPositions.map(p => <option key={p} value={p}>{p}</option>)
                 )}
               </select>
             </div>
@@ -296,8 +302,6 @@ export default function TournamentsPage() {
                 className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400">
                 <option value="PLAYER">Cầu thủ</option>
                 <option value="CAPTAIN">Đội trưởng</option>
-                <option value="GOALKEEPER">Thủ môn</option>
-                <option value="SUBSTITUTE">Dự bị</option>
               </select>
             </div>
           </div>
@@ -340,9 +344,13 @@ export default function TournamentsPage() {
       {!loading && displayList.map(t => {
         const st = STATUS_STYLE[t.status] ?? { label: t.status, cls: "bg-gray-100 text-gray-500" };
         const myReg = getMyReg(t.id);
-        const regSt = myReg ? REG_STYLE[myReg.status] : null;
+        const regSt = myReg && t.status !== "FINISHED" && t.status !== "CANCELED"
+          ? REG_STYLE[myReg.status]
+          : null;
         const canRegister = t.status === "REGISTRATION_OPEN" && !myReg;
-        const canWithdraw = myReg && (myReg.status === "PENDING" || myReg.status === "APPROVED");
+        const canWithdraw = myReg
+          && myReg.status === "PENDING"
+          && t.status === "REGISTRATION_OPEN";
 
         return (
           <Card key={t.id}>
@@ -375,10 +383,10 @@ export default function TournamentsPage() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { label: "Bắt đầu",       value: new Date(t.startDate).toLocaleDateString("vi-VN"), icon: "📅" },
-                  { label: "Kết thúc",      value: new Date(t.endDate).toLocaleDateString("vi-VN"),   icon: "🏁" },
+                  { label: "Bắt đầu", value: new Date(t.startDate).toLocaleDateString("vi-VN"), icon: "📅" },
+                  { label: "Kết thúc", value: new Date(t.endDate).toLocaleDateString("vi-VN"), icon: "🏁" },
                   { label: "VĐV tối thiểu", value: `${t.minAthletes} người`, icon: "👤" },
-                  { label: "VĐV tối đa",    value: `${t.maxAthletes} người`, icon: "👥" },
+                  { label: "VĐV tối đa", value: `${t.maxAthletes} người`, icon: "👥" },
                 ].map((item, i) => (
                   <div key={i} className="bg-gray-50 rounded-lg px-3 py-2.5">
                     <div className="text-xs text-gray-400 mb-0.5">{item.icon} {item.label}</div>

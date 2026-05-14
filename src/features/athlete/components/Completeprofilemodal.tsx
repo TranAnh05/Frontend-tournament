@@ -7,21 +7,43 @@ interface CompleteProfileModalProps {
   onCompleted: () => void;
 }
 
+// Vị trí thi đấu theo từng môn thể thao
+const POSITIONS_BY_SPORT: Record<string, string[]> = {
+  'Bóng đá sân 7': [
+    'Thủ môn', 'Trung vệ', 'Hậu vệ cánh',
+    'Tiền vệ phòng ngự', 'Tiền vệ trung tâm', 'Tiền vệ công',
+    'Tiền vệ cánh', 'Tiền đạo cánh', 'Tiền đạo cắm', 'Trung phong',
+  ],
+  'Bóng rổ 5x5': [
+    'Point Guard (Hậu vệ tổ chức)',
+    'Shooting Guard (Hậu vệ ghi điểm)',
+    'Small Forward (Tiền phong nhỏ)',
+    'Power Forward (Tiền phong lớn)',
+    'Center (Trung phong)',
+  ],
+  'Cầu lông': [
+    'Đơn nam', 'Đơn nữ',
+    'Đôi nam', 'Đôi nữ', 'Đôi hỗn hợp',
+  ],
+};
+
+const ALL_SPORTS = Object.keys(POSITIONS_BY_SPORT);
+
 export default function CompleteProfileModal({ onCompleted }: CompleteProfileModalProps) {
   const [form, setForm] = useState({
     identityNumber: '',
     dateOfBirth: '',
     preferredNumber: '',
-    preferredPosition: '',
+    preferredSport: '',    // môn thể thao
+    preferredPosition: '', // vị trí
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const POSITIONS = [
-    'Thủ môn', 'Trung vệ', 'Hậu vệ cánh', 'Tiền vệ phòng ngự',
-    'Tiền vệ trung tâm', 'Tiền vệ công', 'Tiền vệ cánh',
-    'Tiền đạo cánh', 'Tiền đạo cắm', 'Trung phong',
-  ];
+  // Lấy danh sách vị trí theo môn đã chọn
+  const positions = form.preferredSport
+    ? (POSITIONS_BY_SPORT[form.preferredSport] ?? [])
+    : [];
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -51,7 +73,12 @@ export default function CompleteProfileModal({ onCompleted }: CompleteProfileMod
   };
 
   const setField = (field: string, value: string) => {
-    setForm(f => ({ ...f, [field]: value }));
+    // Khi đổi môn thể thao → reset vị trí
+    if (field === 'preferredSport') {
+      setForm(f => ({ ...f, preferredSport: value, preferredPosition: '' }));
+    } else {
+      setForm(f => ({ ...f, [field]: value }));
+    }
     setErrors(e => ({ ...e, [field]: '' }));
   };
 
@@ -105,7 +132,7 @@ export default function CompleteProfileModal({ onCompleted }: CompleteProfileMod
             Vui lòng điền đầy đủ thông tin cá nhân để hoàn tất hồ sơ vận động viên.
           </p>
 
-          {/* CCCD - bắt buộc */}
+          {/* CCCD */}
           <div className="mb-4">
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
               Số CCCD / Hộ chiếu <span className="text-red-500">*</span>
@@ -122,7 +149,7 @@ export default function CompleteProfileModal({ onCompleted }: CompleteProfileMod
             )}
           </div>
 
-          {/* Ngày sinh - bắt buộc */}
+          {/* Ngày sinh */}
           <div className="mb-4">
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
               Ngày sinh <span className="text-red-500">*</span>
@@ -139,7 +166,7 @@ export default function CompleteProfileModal({ onCompleted }: CompleteProfileMod
             )}
           </div>
 
-          {/* Số áo - tuỳ chọn */}
+          {/* Số áo */}
           <div className="mb-4">
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
               Số áo yêu thích
@@ -159,7 +186,25 @@ export default function CompleteProfileModal({ onCompleted }: CompleteProfileMod
             )}
           </div>
 
-          {/* Vị trí - tuỳ chọn */}
+          {/* Môn thể thao */}
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Môn thể thao sở trường
+              <span className="text-gray-400 font-normal text-xs ml-1">(tuỳ chọn)</span>
+            </label>
+            <select
+              value={form.preferredSport}
+              onChange={e => setField('preferredSport', e.target.value)}
+              className={inputClass('preferredSport')}
+            >
+              <option value="">-- Chọn môn thể thao --</option>
+              {ALL_SPORTS.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Vị trí — chỉ hiện khi đã chọn môn */}
           <div className="mb-6">
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
               Vị trí thi đấu sở trường
@@ -168,10 +213,13 @@ export default function CompleteProfileModal({ onCompleted }: CompleteProfileMod
             <select
               value={form.preferredPosition}
               onChange={e => setField('preferredPosition', e.target.value)}
-              className={inputClass('preferredPosition')}
+              disabled={!form.preferredSport}
+              className={`${inputClass('preferredPosition')} ${!form.preferredSport ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <option value="">-- Chọn vị trí --</option>
-              {POSITIONS.map(p => (
+              <option value="">
+                {form.preferredSport ? '-- Chọn vị trí --' : '-- Chọn môn thể thao trước --'}
+              </option>
+              {positions.map(p => (
                 <option key={p} value={p}>{p}</option>
               ))}
             </select>
