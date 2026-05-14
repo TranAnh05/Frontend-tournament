@@ -108,7 +108,7 @@ const GroupsAndSchedulePage = () => {
                   matches={matches} 
                   loading={loadingMatches} 
                   onRefresh={fetchAllMatches} 
-                  clubs={tourDetail?.approvedClubs || []}
+                  clubs={selectedTour?.approvedClubs || []}
                 />,
     }
   ];
