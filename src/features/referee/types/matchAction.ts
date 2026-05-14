@@ -9,11 +9,27 @@ export interface PlayerDto {
     isConfirmed: boolean;
 }
 
+// 🌟 THÊM MỚI: Ghi nhận lịch sử điểm số của từng Hiệp / Set
+export interface PeriodScoreDto {
+    periodName: string;   // VD: "Set 1", "Hiệp 1"
+    homeScore: number;    // Điểm đội nhà trong Set này
+    awayScore: number;    // Điểm đội khách trong Set này
+    isFinished: boolean;  // True: Set đã kết thúc | False: Set đang diễn ra
+}
+
 export interface TeamLineupDto {
     clubId: number;
     clubName: string;
     logoUrl: string | null;
-    currentScore: number;
+    
+    // 🌟 CẬP NHẬT TỪ BACKEND
+    // Với Bóng đá: Là tổng bàn thắng
+    // Với Cầu lông/Bóng bàn/Tennis: Là Tỷ số Set (Ví dụ: 1 hoặc 2)
+    matchScore: number; 
+
+    // 🌟 THÊM MỚI: Điểm của hiệp/set đang diễn ra (Tự động reset về 0 khi sang Set mới)
+    currentPeriodScore: number; 
+
     startingPlayers: PlayerDto[];
     substitutePlayers: PlayerDto[];
     sentOffPlayers?: PlayerDto[];
@@ -33,6 +49,10 @@ export interface MatchDetailResponse {
         | "CANCELED"
         | "FINALIZED";
     sportRules: Record<string, string>;
+    
+    // 🌟 THÊM MỚI: Mảng chứa lịch sử các Set đã/đang đấu
+    periodScores: PeriodScoreDto[]; 
+    
     homeTeam: TeamLineupDto;
     awayTeam: TeamLineupDto;
     timeline: MatchEventDto[];

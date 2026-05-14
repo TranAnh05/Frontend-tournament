@@ -31,6 +31,12 @@ export const useMatchTimer = (match: MatchDetailResponse | undefined) => {
         return "Hiệp";
     }, [match?.sportName]);
 
+    // Lấy loại đồng hồ từ luật
+    const clockType = match?.sportRules?.CLOCK_TYPE || "COUNT_UP";
+
+    // 🌟 TẠO TIỀN TỐ CHUẨN: Ví dụ "Set 1" hoặc "Hiệp 2"
+    const periodPrefix = `${periodName} ${currentPeriod}`;
+
     useEffect(() => {
         if (!match || !match.timeline) return;
 
@@ -75,6 +81,26 @@ export const useMatchTimer = (match: MatchDetailResponse | undefined) => {
             return;
         }
 
+        const clockType = match.sportRules?.CLOCK_TYPE || "COUNT_UP";
+        if (clockType === "SET_BASED") {
+            // Đếm số Set cần để thắng (Ví dụ Best of 3 thì cần 2, Best of 5 thì cần 3)
+            const requiredWins = Math.ceil(maxPeriods / 2);
+
+            // Kiểm tra xem có đội nào đã đạt đủ số Set thắng chưa
+            const homeMatchScore = match.homeTeam?.matchScore || 0;
+            const awayMatchScore = match.awayTeam?.matchScore || 0;
+
+            if (
+                homeMatchScore >= requiredWins ||
+                awayMatchScore >= requiredWins
+            ) {
+                setMatchState("FULL_TIME");
+                setDisplayTime("KẾT THÚC");
+                return; // Nếu đã có người thắng chung cuộc thì báo Kết thúc luôn, không sang Set 3.
+            }
+        }
+
+        // 🌟 Logic đếm hiệp cũ (vẫn áp dụng hoàn hảo cho Bóng đá)
         if (startCount === endCount && startCount > 0) {
             if (startCount >= maxPeriods) {
                 setMatchState("FULL_TIME");
@@ -89,10 +115,10 @@ export const useMatchTimer = (match: MatchDetailResponse | undefined) => {
 
         setMatchState("PLAYING");
 
-        const clockType = match.sportRules?.CLOCK_TYPE || "COUNT_UP";
-
+        // 🌟 XỬ LÝ DÀNH RIÊNG CHO MÔN ĐÁNH SET (CẦU LÔNG)
         if (clockType === "SET_BASED") {
-            setDisplayTime(`${periodName} ${activePeriod}`);
+            // Thay vì gán là "Set 1" (gây lỗi chuỗi "Set 1 - Set 1"), ta gán là "Đang diễn ra"
+            setDisplayTime("Đang diễn ra");
             return;
         }
 
@@ -156,13 +182,15 @@ export const useMatchTimer = (match: MatchDetailResponse | undefined) => {
 
         const intervalId = setInterval(updateDisplayTime, 1000);
         return () => clearInterval(intervalId);
-    }, [match, periodName]);
+    }, [match, periodName, clockType]); // Đã bổ sung clockType vào mảng dependency
 
     return {
         periodName,
         currentPeriod,
+        periodPrefix, // 🌟 Export tiền tố "Set 1" ra ngoài cho các nút bấm sử dụng
         matchState,
         displayTime,
-        currentFormattedTime: `${periodName} ${currentPeriod} - ${displayTime}`,
+        // 🌟 Kết quả chuỗi ghép cuối cùng: "Set 1 - Đang diễn ra" hoặc "Hiệp 1 - 45:12"
+        currentFormattedTime: `${periodPrefix} - ${displayTime}`,
     };
 };

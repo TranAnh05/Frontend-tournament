@@ -31,7 +31,7 @@ interface LiveActionBoardProps {
     onActionClick: (actionCode: string) => void;
 }
 
-const EVENT_UI_MAPPING: Record<
+const BASE_EVENT_UI_MAPPING: Record<
     string,
     { label: string; icon: any; className: string; colSpan: number }
 > = {
@@ -66,7 +66,7 @@ const EVENT_UI_MAPPING: Record<
         colSpan: 1,
     },
     GOAL: {
-        label: "+1 Điểm / Ghi bàn",
+        label: "+1 Điểm / Ghi bàn", // Sẽ được override động dựa theo môn
         icon: Trophy,
         className:
             "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200",
@@ -161,9 +161,39 @@ export const LiveActionBoard: React.FC<LiveActionBoardProps> = ({
 
     const allowedEventsStr = match.sportRules?.ALLOWED_EVENTS || "";
     const activeEventCodes = allowedEventsStr.split(",").filter(Boolean);
+    
+    // 🌟 PHÂN NHÁNH LOGIC: Kiểm tra môn đánh theo Set
+    const isSetBased = match.sportRules?.CLOCK_TYPE === "SET_BASED";
 
     const handleFireEvent = (actionCode: string) => {
         onActionClick(actionCode);
+    };
+
+    // 🌟 RENDER ĐẸP MẮT: Hàm tách chuỗi thời gian cho Nhật ký sự kiện
+    const renderEventTime = (timeString: string | undefined) => {
+        if (!timeString || timeString === "0") {
+            return <span className="text-gray-400">--:--</span>;
+        }
+        
+        // Nếu chuỗi chứa dấu phân cách chuẩn của Backend (VD: "Set 1 - 05:20" hoặc "Set 1 - Kết thúc")
+        const parts = timeString.split(" - ");
+        if (parts.length === 2) {
+            return (
+                <div className="flex flex-col items-end justify-center w-full">
+                    <span className="text-[9px] uppercase font-bold text-gray-400 leading-none mb-1">
+                        {parts[0]}
+                    </span>
+                    <span className={cn(
+                        "text-xs font-black leading-none",
+                        parts[1].toLowerCase().includes("kết thúc") ? "text-red-500" : "text-gray-700"
+                    )}>
+                        {parts[1]}
+                    </span>
+                </div>
+            );
+        }
+        
+        return <span>{timeString}</span>;
     };
 
     return (
@@ -206,7 +236,7 @@ export const LiveActionBoard: React.FC<LiveActionBoardProps> = ({
                                             className="px-6 py-3 bg-white hover:bg-gray-50 text-blue-700 border-2 border-blue-200 font-bold rounded-2xl shadow-sm transition-transform active:scale-95 flex items-center gap-2 mx-auto"
                                         >
                                             <PlayCircle size={20} />
-                                            BẮT ĐẦU HIỆP PHỤ (HIỆP {currentPeriod})
+                                            BẮT ĐẦU {periodName.toUpperCase()} PHỤ ({periodName.toUpperCase()} {currentPeriod})
                                         </button>
                                     )}
                                 </div>
@@ -254,10 +284,13 @@ export const LiveActionBoard: React.FC<LiveActionBoardProps> = ({
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                                 {activeEventCodes.length > 0 ? (
                                     activeEventCodes.map((code) => {
-                                        const style = EVENT_UI_MAPPING[code] || {
-                                            ...DEFAULT_EVENT_UI,
-                                            label: code,
-                                        };
+                                        // 🌟 CẬP NHẬT TÊN NÚT BẤM ĐỘNG THEO MÔN THỂ THAO
+                                        const baseStyle = BASE_EVENT_UI_MAPPING[code] || { ...DEFAULT_EVENT_UI, label: code };
+                                        const style = { ...baseStyle };
+                                        if (isSetBased && code === "GOAL") {
+                                            style.label = "+1 Điểm"; // Ẩn chữ Ghi bàn cho Cầu lông/Tennis
+                                        }
+
                                         const Icon = style.icon;
 
                                         return (
@@ -318,7 +351,7 @@ export const LiveActionBoard: React.FC<LiveActionBoardProps> = ({
                             .reverse()
                             .map((event: MatchEventDto) => {
                                 const eventUI =
-                                    EVENT_UI_MAPPING[event.eventType] ||
+                                    BASE_EVENT_UI_MAPPING[event.eventType] ||
                                     DEFAULT_EVENT_UI;
                                 const LogIcon = eventUI.icon;
 
@@ -334,11 +367,6 @@ export const LiveActionBoard: React.FC<LiveActionBoardProps> = ({
                                             "border-l-4 border-l-red-500 border-y-gray-100 border-r-gray-100";
                                 }
 
-                                const timeStr =
-                                    event.eventTime === "0" || !event.eventTime
-                                        ? "--:--"
-                                        : event.eventTime.replace(" - ", "\n");
-
                                 return (
                                     <div
                                         key={event.id}
@@ -347,8 +375,9 @@ export const LiveActionBoard: React.FC<LiveActionBoardProps> = ({
                                             borderClass,
                                         )}
                                     >
-                                        <div className="font-mono text-[11px] font-bold text-gray-500 w-[60px] md:w-[72px] shrink-0 text-right leading-tight pr-2 whitespace-pre-line">
-                                            {timeStr}
+                                        <div className="font-mono w-[60px] md:w-[72px] shrink-0 pr-2">
+                                            {/* 🌟 GỌI HÀM RENDER FORMAT MỚI CHO THỜI GIAN SỰ KIỆN */}
+                                            {renderEventTime(event.eventTime)}
                                         </div>
 
                                         <div
