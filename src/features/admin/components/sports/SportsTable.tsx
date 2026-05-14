@@ -12,6 +12,67 @@ import {
 import { type SportResponse } from "../../types/sports";
 import { cn } from "@/utils/classNames";
 
+
+const RULE_META: Record<string, { label: string; icon: string; format?: (v: string) => string }> = {
+    WIN_POINTS: { label: "Điểm khi thắng", icon: "🏆", format: v => `${v} điểm` },
+    DRAW_POINTS: { label: "Điểm khi hòa", icon: "🤝", format: v => `${v} điểm` },
+    LOSE_POINTS: { label: "Điểm khi thua", icon: "❌", format: v => `${v} điểm` },
+    MAX_STARTING_PLAYERS: { label: "VĐV ra sân tối đa", icon: "👥", format: v => `${v} người` },
+    MIN_STARTING_PLAYERS: { label: "VĐV ra sân tối thiểu", icon: "👤", format: v => `${v} người` },
+    ALLOWED_EVENTS: {
+        label: "Sự kiện được ghi nhận",
+        icon: "📋",
+        format: v => v.split(",").map(e => {
+            const map: Record<string, string> = {
+                GOAL: "Ghi bàn",
+                YELLOW_CARD: "Thẻ vàng",
+                RED_CARD: "Thẻ đỏ",
+                INJURY: "Chấn thương",
+                TIMEOUT: "Hội ý",
+                SUBSTITUTION: "Thay người",
+                FOUL: "Phạm lỗi",
+                PENALTY: "Phạt đền",
+            };
+            return map[e.trim()] ?? e.trim();
+        }).join(", ")
+    },
+    CLOCK_TYPE: {
+        label: "Loại tính giờ", icon: "⏱️", format: v =>
+            v === "COUNTDOWN" ? "Đếm ngược" : v === "SET_BASED" ? "Tính theo Set" : "Đếm lên"
+    },
+    PERIODS: { label: "Số hiệp / Set", icon: "🔄", format: v => `${v} hiệp` },
+    OVERTIME_ALLOWED: { label: "Cho phép hiệp phụ", icon: "⏰", format: v => v === "YES" ? "Có" : "Không" },
+    WIN_BY_TWO_RULE: { label: "Phải hơn 2 điểm để thắng", icon: "2️⃣", format: v => v === "YES" ? "Có" : "Không" },
+    MAX_POINTS_PER_SET: { label: "Điểm tối đa mỗi set", icon: "🎯", format: v => `${v} điểm` },
+    POINTS_TO_WIN_SET: { label: "Điểm cần để thắng set", icon: "✅", format: v => `${v} điểm` },
+    SETS_TO_WIN: { label: "Set cần để thắng", icon: "🥇", format: v => `${v} set` },
+    SUBSTITUTIONS: { label: "Lần thay người", icon: "🔁", format: v => `${v} lần` },
+    MATCH_DURATION: { label: "Thời gian trận đấu", icon: "⏳", format: v => `${v} phút` },
+    MAX_PLAYERS_ON_FIELD: { label: "Cầu thủ trên sân", icon: "👥", format: v => `${v} người` },
+    MAX_PLAYERS_ON_COURT: { label: "VĐV trên sân", icon: "👥", format: v => `${v} người` },
+    MAX_SUBSTITUTES: { label: "VĐV dự bị tối đa", icon: "🔄", format: v => `${v} người` },
+    MAX_SUBSTITUTIONS_ALLOWED: { label: "Lượt thay người tối đa", icon: "🔁", format: v => `${v} lượt` },
+    MATCH_DURATION_MINUTES: { label: "Thời gian trận đấu", icon: "⏳", format: v => `${v} phút` },
+    HALF_DURATION_MINUTES: { label: "Thời gian mỗi hiệp", icon: "⏱️", format: v => `${v} phút` },
+    QUARTER_DURATION_MINUTES: { label: "Thời gian mỗi quý (quarter)", icon: "⏱️", format: v => `${v} phút` },
+    YELLOW_CARD_TO_RED: { label: "Thẻ vàng thành thẻ đỏ", icon: "🟨", format: v => `${v} thẻ vàng` },
+    PERSONAL_FOULS_LIMIT: { label: "Giới hạn lỗi cá nhân", icon: "🚫", format: v => `${v} lỗi` },
+    TEAM_FOULS_BONUS: { label: "Lỗi đội trước khi bị ném phạt", icon: "⚠️", format: v => `${v} lỗi/hiệp` },
+};
+
+function formatRule(key: string, value: string) {
+    const meta = RULE_META[key];
+    if (meta) return {
+        label: meta.label,
+        icon: meta.icon,
+        displayValue: meta.format ? meta.format(value) : value,
+    };
+    return {
+        label: key.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase()),
+        icon: "⚙️",
+        displayValue: value,
+    };
+}
 interface SportsTableProps {
     sports: SportResponse[];
     isLoading: boolean;
@@ -99,7 +160,7 @@ export const SportsTable: React.FC<SportsTableProps> = ({
                                         className={cn(
                                             "hover:bg-gray-50 transition-colors cursor-pointer",
                                             isExpanded &&
-                                                "bg-blue-50/50 hover:bg-blue-50/50",
+                                            "bg-blue-50/50 hover:bg-blue-50/50",
                                         )}
                                         onClick={() =>
                                             toggleExpandRow(sport.id)
@@ -210,7 +271,7 @@ export const SportsTable: React.FC<SportsTableProps> = ({
                                                     </h4>
 
                                                     {sport.rules.length ===
-                                                    0 ? (
+                                                        0 ? (
                                                         <p className="text-sm text-gray-500 italic">
                                                             Môn thể thao này
                                                             chưa được cấu hình
@@ -220,28 +281,23 @@ export const SportsTable: React.FC<SportsTableProps> = ({
                                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                                             {sport.rules.map(
                                                                 (rule) => (
-                                                                    <div
-                                                                        key={
-                                                                            rule.id
-                                                                        }
-                                                                        className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex flex-col gap-1"
+                                                                    <div key={rule.id}
+                                                                        className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col gap-2"
                                                                     >
-                                                                        <div className="flex justify-between items-start">
-                                                                            <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
-                                                                                {
-                                                                                    rule.ruleKey
-                                                                                }
-                                                                            </span>
-                                                                            <span className="font-bold text-gray-900 bg-gray-100 px-2 rounded-sm">
-                                                                                {
-                                                                                    rule.ruleValue
-                                                                                }
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-lg">{formatRule(rule.ruleKey, rule.ruleValue).icon}</span>
+                                                                            <span className="text-sm font-bold text-gray-800 leading-tight">
+                                                                                {formatRule(rule.ruleKey, rule.ruleValue).label}
                                                                             </span>
                                                                         </div>
-                                                                        <span className="text-sm text-gray-600 mt-1 line-clamp-2">
-                                                                            {rule.description ||
-                                                                                "Không có giải thích chi tiết."}
-                                                                        </span>
+                                                                        <div className="text-xl font-black text-blue-600">
+                                                                            {formatRule(rule.ruleKey, rule.ruleValue).displayValue}
+                                                                        </div>
+                                                                        {rule.description && (
+                                                                            <p className="text-xs text-gray-500 leading-relaxed border-t border-gray-100 pt-2">
+                                                                                {rule.description}
+                                                                            </p>
+                                                                        )}
                                                                     </div>
                                                                 ),
                                                             )}
