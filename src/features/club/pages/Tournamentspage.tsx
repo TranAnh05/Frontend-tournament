@@ -6,12 +6,55 @@ import type { ClubMemberResponse } from "../api/athleteApi";
 import { useUiStore } from "../store/uiStore";
 import { Card, Modal, Field, Input, Btn } from "../components/common/UIComponents";
 
+// ── Mapping môn thể thao → danh sách vị trí phù hợp ─────────────────────────
+// Key là sportName (toLowerCase, trim) hoặc một phần tên
+const SPORT_POSITIONS: Record<string, string[]> = {
+  "bóng đá":   ["Thủ môn", "Trung vệ", "Hậu vệ cánh", "Tiền vệ phòng ngự",
+                 "Tiền vệ trung tâm", "Tiền vệ công", "Tiền vệ cánh",
+                 "Tiền đạo cánh", "Tiền đạo cắm", "Trung phong"],
+  "bóng rổ":   ["Point Guard", "Shooting Guard", "Small Forward",
+                 "Power Forward", "Center"],
+  "cầu lông":  ["Đơn nam", "Đơn nữ", "Đôi nam", "Đôi nữ", "Đôi hỗn hợp"],
+  "bóng chuyền": ["Chủ công", "Phụ công", "Libero", "Chuyền hai", "Đối chuyền"],
+  "tennis":    ["Đơn nam", "Đơn nữ", "Đôi nam", "Đôi nữ"],
+  "bơi lội":   ["Tự do", "Bướm", "Ngửa", "Ếch", "Hỗn hợp"],
+};
+
+// Lấy danh sách positions hợp lệ dựa trên sportName
+function getPositionsForSport(sportName: string): string[] {
+  const lower = sportName.toLowerCase();
+  for (const [key, positions] of Object.entries(SPORT_POSITIONS)) {
+    if (lower.includes(key)) return positions;
+  }
+  return []; // không có filter → hiển thị tất cả
+}
+
+// Lọc VĐV phù hợp với môn thể thao
+function filterAthletesBySport(members: ClubMemberResponse[], sportName: string): {
+  suitable: ClubMemberResponse[];
+  others: ClubMemberResponse[];
+} {
+  const positions = getPositionsForSport(sportName);
+  if (positions.length === 0) {
+    return { suitable: members, others: [] };
+  }
+  const suitable = members.filter(m =>
+    m.preferredPosition && positions.some(p =>
+      m.preferredPosition.toLowerCase().includes(p.toLowerCase()) ||
+      p.toLowerCase().includes(m.preferredPosition.toLowerCase())
+    )
+  );
+  const suitableIds = new Set(suitable.map(m => m.athleteId));
+  const others = members.filter(m => !suitableIds.has(m.athleteId));
+  return { suitable, others };
+}
+
 const STATUS_STYLE: Record<string, { label: string; cls: string }> = {
-  DRAFT:             { label: "Nháp",           cls: "bg-gray-100 text-gray-500" },
-  REGISTRATION_OPEN: { label: "Mở đăng ký",     cls: "bg-blue-50 text-blue-600" },
-  ONGOING:           { label: "Đang diễn ra",   cls: "bg-emerald-50 text-emerald-700" },
-  FINISHED:          { label: "Kết thúc",        cls: "bg-gray-100 text-gray-400" },
-  CANCELED:          { label: "Đã hủy",          cls: "bg-red-50 text-red-400" },
+  DRAFT:             { label: "Nháp",          cls: "bg-gray-100 text-gray-500" },
+  REGISTRATION_OPEN: { label: "Mở đăng ký",    cls: "bg-blue-50 text-blue-600" },
+  ONGOING:           { label: "Đang diễn ra",  cls: "bg-emerald-50 text-emerald-700" },
+  FINISHED:          { label: "Kết thúc",      cls: "bg-gray-100 text-gray-400" },
+  CANCELED:          { label: "Đã hủy",        cls: "bg-red-50 text-red-400" },
 };
 
 const REG_STYLE: Record<string, { label: string; cls: string }> = {
@@ -22,16 +65,10 @@ const REG_STYLE: Record<string, { label: string; cls: string }> = {
 };
 
 const FORMAT_LABEL: Record<string, string> = {
-  ROUND_ROBIN:  "Vòng tròn",
-  KNOCKOUT:     "Loại trực tiếp",
-  GROUP_STAGE:  "Vòng bảng",
+  ROUND_ROBIN: "Vòng tròn",
+  KNOCKOUT:    "Loại trực tiếp",
+  GROUP_STAGE: "Vòng bảng",
 };
-
-const POSITIONS = [
-  "Thủ môn", "Trung vệ", "Hậu vệ cánh", "Tiền vệ phòng ngự",
-  "Tiền vệ trung tâm", "Tiền vệ công", "Tiền vệ cánh",
-  "Tiền đạo cánh", "Tiền đạo cắm", "Trung phong",
-];
 
 interface RosterEntry {
   athleteId: number;
@@ -47,19 +84,17 @@ export default function TournamentsPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"ALL" | "MY">("ALL");
 
-  // Modal đăng ký
   const [regModal, setRegModal] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState<TournamentResponse | null>(null);
   const [regForm, setRegForm] = useState({ homeKitColor: "", awayKitColor: "", financialProofUrl: "" });
   const [submitting, setSubmitting] = useState(false);
 
-  // Bước 2: chọn đội hình
   const [step, setStep] = useState<1 | 2>(1);
   const [members, setMembers] = useState<ClubMemberResponse[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [selectedAthletes, setSelectedAthletes] = useState<Set<number>>(new Set());
   const [rosterEntries, setRosterEntries] = useState<Record<number, RosterEntry>>({});
-  const [lockedMap, setLockedMap] = useState<Map<number, string>>(new Map());
+  const [showOthers, setShowOthers] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -83,18 +118,14 @@ export default function TournamentsPage() {
   const getMyReg = (tournamentId: number) =>
     registrations.find(r => r.tournamentId === tournamentId);
 
-  // Bước 1 → Bước 2: chỉ validate form rồi load danh sách thành viên, CHƯA gọi API đăng ký
   const handleGoToStep2 = async () => {
     if (!regForm.homeKitColor.trim()) return alert("Vui lòng nhập màu áo chính!");
     setLoadingMembers(true);
     setStep(2);
+    setShowOthers(false);
     try {
-      const [memberList, locked] = await Promise.all([
-        athleteApi.getMembers("APPROVED"),
-        athleteApi.getLockedAthletes(0), // 0 = giải mới chưa có id
-      ]);
+      const memberList = await athleteApi.getMembers("APPROVED");
       setMembers(memberList);
-      setLockedMap(locked);
       const defaultEntries: Record<number, RosterEntry> = {};
       memberList.forEach(m => {
         defaultEntries[m.athleteId] = {
@@ -113,23 +144,17 @@ export default function TournamentsPage() {
     }
   };
 
-  // Bước 2 → Submit: gọi API đăng ký giải TRƯỚC, rồi nộp roster
   const handleSubmitAll = async () => {
     if (!selectedTournament) return;
     if (selectedAthletes.size === 0) return alert("Vui lòng chọn ít nhất 1 VĐV!");
-    if (selectedTournament.minAthletes && selectedAthletes.size < selectedTournament.minAthletes) {
+    if (selectedTournament.minAthletes && selectedAthletes.size < selectedTournament.minAthletes)
       return alert(`Cần ít nhất ${selectedTournament.minAthletes} VĐV!`);
-    }
-    if (selectedTournament.maxAthletes && selectedAthletes.size > selectedTournament.maxAthletes) {
+    if (selectedTournament.maxAthletes && selectedAthletes.size > selectedTournament.maxAthletes)
       return alert(`Tối đa ${selectedTournament.maxAthletes} VĐV!`);
-    }
 
     setSubmitting(true);
     try {
-      // 1. Đăng ký giải
       await tournamentApi.register(selectedTournament.id, regForm);
-
-      // 2. Nộp danh sách VĐV
       const rosters = Array.from(selectedAthletes).map(id => ({
         athleteId: id,
         jerseyNumber: Number(rosterEntries[id]?.jerseyNumber) || 0,
@@ -137,7 +162,6 @@ export default function TournamentsPage() {
         role: rosterEntries[id]?.role || "PLAYER",
       }));
       await tournamentApi.submitRoster(selectedTournament.id, { rosters });
-
       showToast("🎉 Đăng ký giải và nộp danh sách VĐV thành công!");
       await load();
       closeModal();
@@ -149,7 +173,6 @@ export default function TournamentsPage() {
   };
 
   const toggleAthlete = (athleteId: number) => {
-    if (lockedMap.has(athleteId)) return; // không cho chọn VĐV đang bị khóa
     setSelectedAthletes(prev => {
       const next = new Set(prev);
       if (next.has(athleteId)) next.delete(athleteId);
@@ -159,10 +182,7 @@ export default function TournamentsPage() {
   };
 
   const updateRosterEntry = (athleteId: number, field: keyof RosterEntry, value: string) => {
-    setRosterEntries(prev => ({
-      ...prev,
-      [athleteId]: { ...prev[athleteId], [field]: value },
-    }));
+    setRosterEntries(prev => ({ ...prev, [athleteId]: { ...prev[athleteId], [field]: value } }));
   };
 
   const closeModal = () => {
@@ -171,7 +191,7 @@ export default function TournamentsPage() {
     setSelectedAthletes(new Set());
     setRosterEntries({});
     setMembers([]);
-    setLockedMap(new Map());
+    setShowOthers(false);
   };
 
   const handleWithdraw = async (tournamentId: number) => {
@@ -189,6 +209,104 @@ export default function TournamentsPage() {
     ? tournaments.filter(t => registrations.some(r => r.tournamentId === t.id))
     : tournaments;
 
+  // Tính danh sách VĐV phù hợp và không phù hợp
+  const { suitable, others } = selectedTournament
+    ? filterAthletesBySport(members, selectedTournament.sportName)
+    : { suitable: members, others: [] };
+
+  const positions = selectedTournament
+    ? getPositionsForSport(selectedTournament.sportName)
+    : [];
+
+  const renderAthleteCard = (m: ClubMemberResponse, isSuitable: boolean) => {
+    const selected = selectedAthletes.has(m.athleteId);
+    const entry = rosterEntries[m.athleteId];
+    const isInjured = m.healthStatus === "INJURED";
+
+    return (
+      <div key={m.athleteId}
+        className={`border rounded-xl p-3 transition-all
+          ${selected ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-white"}
+          ${isInjured ? "opacity-60" : ""}
+          ${!isSuitable ? "opacity-70" : ""}`}>
+        <div className="flex items-center gap-3">
+          <input type="checkbox" checked={selected}
+            onChange={() => !isInjured && toggleAthlete(m.athleteId)}
+            disabled={isInjured}
+            className="w-4 h-4 accent-blue-600 cursor-pointer" />
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold text-gray-900 truncate">
+              {m.fullName}
+              {isInjured && <span className="ml-2 text-xs text-red-500 font-normal">🤕 Chấn thương</span>}
+              {!isSuitable && <span className="ml-2 text-xs text-orange-500 font-normal">⚠️ Không chuyên môn</span>}
+            </div>
+            <div className="text-xs text-gray-400">
+              {m.preferredPosition ?? "Chưa có vị trí"} · #{m.preferredNumber ?? "—"}
+            </div>
+          </div>
+          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0
+            ${m.clubRole === "CAPTAIN" ? "bg-yellow-100 text-yellow-700" :
+              m.clubRole === "HEAD_COACH" ? "bg-purple-100 text-purple-700" :
+              "bg-gray-100 text-gray-500"}`}>
+            {m.clubRole === "CAPTAIN" ? "⭐ Đội trưởng" :
+             m.clubRole === "HEAD_COACH" ? "👨‍💼 HLV" : "Thành viên"}
+          </span>
+        </div>
+
+        {selected && (
+          <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-blue-100">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Số áo</label>
+              <input type="number" min={1} max={99}
+                value={entry?.jerseyNumber ?? ""}
+                onChange={e => updateRosterEntry(m.athleteId, "jerseyNumber", e.target.value)}
+                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
+                placeholder="VD: 10" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Vị trí</label>
+              <select value={entry?.position ?? ""}
+                onChange={e => updateRosterEntry(m.athleteId, "position", e.target.value)}
+                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400">
+                <option value="">-- Chọn --</option>
+                {/* Hiện vị trí phù hợp với môn trước */}
+                {positions.length > 0 && (
+                  <optgroup label={`✅ ${selectedTournament?.sportName}`}>
+                    {positions.map(p => <option key={p} value={p}>{p}</option>)}
+                  </optgroup>
+                )}
+                {positions.length > 0 && (
+                  <optgroup label="Khác">
+                    {Object.values(SPORT_POSITIONS).flat()
+                      .filter(p => !positions.includes(p))
+                      .filter((p, i, arr) => arr.indexOf(p) === i)
+                      .map(p => <option key={p} value={p}>{p}</option>)}
+                  </optgroup>
+                )}
+                {positions.length === 0 && (
+                  Object.values(SPORT_POSITIONS).flat()
+                    .filter((p, i, arr) => arr.indexOf(p) === i)
+                    .map(p => <option key={p} value={p}>{p}</option>)
+                )}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Vai trò</label>
+              <select value={entry?.role ?? "PLAYER"}
+                onChange={e => updateRosterEntry(m.athleteId, "role", e.target.value)}
+                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400">
+                <option value="PLAYER">Cầu thủ</option>
+                <option value="CAPTAIN">Đội trưởng</option>
+                <option value="GOALKEEPER">Thủ môn</option>
+                <option value="SUBSTITUTE">Dự bị</option>
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-4">
       {/* Header */}
@@ -204,7 +322,8 @@ export default function TournamentsPage() {
       <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit border border-gray-200">
         {([["ALL", "🏆 Tất cả giải"], ["MY", "📋 Giải của tôi"]] as const).map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`px-5 py-1.5 rounded-lg text-sm font-semibold transition-all cursor-pointer border-none ${tab === key ? "bg-white text-emerald-700 shadow-sm" : "bg-transparent text-gray-500 hover:text-gray-700"}`}>
+            className={`px-5 py-1.5 rounded-lg text-sm font-semibold transition-all cursor-pointer border-none
+              ${tab === key ? "bg-white text-emerald-700 shadow-sm" : "bg-transparent text-gray-500 hover:text-gray-700"}`}>
             {label}
           </button>
         ))}
@@ -219,7 +338,6 @@ export default function TournamentsPage() {
         </div>
       )}
 
-      {/* Tournament cards */}
       {!loading && displayList.map(t => {
         const st = STATUS_STYLE[t.status] ?? { label: t.status, cls: "bg-gray-100 text-gray-500" };
         const myReg = getMyReg(t.id);
@@ -294,47 +412,57 @@ export default function TournamentsPage() {
 
           {/* Step indicator */}
           <div className="flex items-center gap-2 mb-5">
-            <div className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full ${step === 1 ? "bg-blue-600 text-white" : "bg-green-100 text-green-700"}`}>
+            <div className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full
+              ${step === 1 ? "bg-blue-600 text-white" : "bg-green-100 text-green-700"}`}>
               {step === 1 ? "1" : "✓"} Thông tin đội
             </div>
             <div className="flex-1 h-px bg-gray-200" />
-            <div className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full ${step === 2 ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-400"}`}>
+            <div className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full
+              ${step === 2 ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-400"}`}>
               2 Danh sách VĐV
             </div>
           </div>
 
-          {/* ---- BƯỚC 1: Thông tin đội ---- */}
+          {/* BƯỚC 1 */}
           {step === 1 && (
             <>
               <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-2.5 mb-4 text-xs text-blue-600">
-                📌 Yêu cầu tối thiểu <strong>{selectedTournament.minAthletes}</strong> VĐV, tối đa <strong>{selectedTournament.maxAthletes}</strong> VĐV
+                📌 Yêu cầu tối thiểu <strong>{selectedTournament.minAthletes}</strong> VĐV,
+                tối đa <strong>{selectedTournament.maxAthletes}</strong> VĐV &nbsp;·&nbsp;
+                ⚽ Môn: <strong>{selectedTournament.sportName}</strong>
               </div>
               <Field label="Màu áo chính *">
-                <Input value={regForm.homeKitColor} onChange={v => setRegForm({ ...regForm, homeKitColor: v })} placeholder="VD: Đỏ, Xanh dương..." />
+                <Input value={regForm.homeKitColor}
+                  onChange={v => setRegForm({ ...regForm, homeKitColor: v })}
+                  placeholder="VD: Đỏ, Xanh dương..." />
               </Field>
               <Field label="Màu áo phụ">
-                <Input value={regForm.awayKitColor} onChange={v => setRegForm({ ...regForm, awayKitColor: v })} placeholder="VD: Trắng (tùy chọn)" />
+                <Input value={regForm.awayKitColor}
+                  onChange={v => setRegForm({ ...regForm, awayKitColor: v })}
+                  placeholder="VD: Trắng (tùy chọn)" />
               </Field>
               <Field label="Link minh chứng tài chính">
-                <Input value={regForm.financialProofUrl} onChange={v => setRegForm({ ...regForm, financialProofUrl: v })} placeholder="https://drive.google.com/..." />
+                <Input value={regForm.financialProofUrl}
+                  onChange={v => setRegForm({ ...regForm, financialProofUrl: v })}
+                  placeholder="https://drive.google.com/..." />
               </Field>
               <div className="flex gap-2 justify-end mt-4">
                 <Btn onClick={closeModal}>Hủy</Btn>
-                <Btn variant="primary" onClick={handleGoToStep2}>
-                  Tiếp theo →
-                </Btn>
+                <Btn variant="primary" onClick={handleGoToStep2}>Tiếp theo →</Btn>
               </div>
             </>
           )}
 
-          {/* ---- BƯỚC 2: Chọn đội hình ---- */}
+          {/* BƯỚC 2 */}
           {step === 2 && (
             <>
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-bold text-gray-700">
                   👥 Chọn VĐV tham dự ({selectedAthletes.size}/{selectedTournament.maxAthletes})
                 </p>
-                <span className="text-xs text-gray-400">Tối thiểu {selectedTournament.minAthletes} người</span>
+                <span className="text-xs text-gray-400">
+                  Tối thiểu {selectedTournament.minAthletes} người
+                </span>
               </div>
 
               {loadingMembers && (
@@ -349,86 +477,46 @@ export default function TournamentsPage() {
               )}
 
               {!loadingMembers && members.length > 0 && (
-                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                  {lockedMap.size > 0 && (
-                    <div className="px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-xs text-orange-700 mb-1">
-                      🔒 <strong>{lockedMap.size} VĐV</strong> đang tham gia giải đấu khác và không thể chọn.
+                <div className="max-h-[420px] overflow-y-auto pr-1 space-y-3">
+
+                  {/* VĐV phù hợp với môn */}
+                  {suitable.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
+                          ✅ Phù hợp với {selectedTournament.sportName} ({suitable.length} người)
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {suitable.map(m => renderAthleteCard(m, true))}
+                      </div>
                     </div>
                   )}
-                  {members.map(m => {
-                    const selected = selectedAthletes.has(m.athleteId);
-                    const entry = rosterEntries[m.athleteId];
-                    const isInjured = m.healthStatus === "INJURED";
-                    const lockedTournament = lockedMap.get(m.athleteId);
-                    const isLocked = !!lockedTournament;
-                    const isDisabled = isInjured || isLocked;
-                    return (
-                      <div key={m.athleteId}
-                        className={`border rounded-xl p-3 transition-all ${
-                          isLocked
-                            ? "border-orange-200 bg-orange-50 opacity-60 cursor-not-allowed"
-                            : selected
-                              ? "border-blue-400 bg-blue-50"
-                              : "border-gray-200 bg-white"
-                        } ${isInjured && !isLocked ? "opacity-60" : ""}`}>
-                        <div className="flex items-center gap-3">
-                          <input type="checkbox" checked={selected && !isLocked}
-                            onChange={() => !isDisabled && toggleAthlete(m.athleteId)}
-                            disabled={isDisabled} className="w-4 h-4 accent-blue-600 cursor-pointer" />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-bold text-gray-900 truncate">
-                              {m.fullName}
-                              {isLocked && (
-                                <span className="ml-2 text-xs text-orange-500 font-normal">
-                                  🔒 đang ở {lockedTournament}
-                                </span>
-                              )}
-                              {isInjured && !isLocked && (
-                                <span className="ml-2 text-xs text-red-500 font-normal">🤕 Chấn thương</span>
-                              )}
-                            </div>
-                            <div className="text-xs text-gray-400">{m.preferredPosition ?? "—"} · #{m.preferredNumber ?? "—"}</div>
-                          </div>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${m.clubRole === "CAPTAIN" ? "bg-yellow-100 text-yellow-700" : m.clubRole === "HEAD_COACH" ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-500"}`}>
-                            {m.clubRole === "CAPTAIN" ? "⭐ Đội trưởng" : m.clubRole === "HEAD_COACH" ? "👨‍💼 HLV" : "Thành viên"}
-                          </span>
-                        </div>
 
-                        {selected && !isLocked && (
-                          <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-blue-100">
-                            <div>
-                              <label className="block text-xs text-gray-500 mb-1">Số áo</label>
-                              <input type="number" min={1} max={99}
-                                value={entry?.jerseyNumber ?? ""}
-                                onChange={e => updateRosterEntry(m.athleteId, "jerseyNumber", e.target.value)}
-                                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
-                                placeholder="VD: 10" />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-gray-500 mb-1">Vị trí</label>
-                              <select value={entry?.position ?? ""}
-                                onChange={e => updateRosterEntry(m.athleteId, "position", e.target.value)}
-                                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400">
-                                <option value="">-- Chọn --</option>
-                                {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
-                              </select>
-                            </div>
-                            <div>
-                              <label className="block text-xs text-gray-500 mb-1">Vai trò</label>
-                              <select value={entry?.role ?? "PLAYER"}
-                                onChange={e => updateRosterEntry(m.athleteId, "role", e.target.value)}
-                                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400">
-                                <option value="PLAYER">Cầu thủ</option>
-                                <option value="CAPTAIN">Đội trưởng</option>
-                                <option value="GOALKEEPER">Thủ môn</option>
-                                <option value="SUBSTITUTE">Dự bị</option>
-                              </select>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {/* VĐV không chuyên môn */}
+                  {others.length > 0 && (
+                    <div>
+                      <button
+                        onClick={() => setShowOthers(v => !v)}
+                        className="w-full flex items-center justify-between text-xs font-bold text-orange-600 bg-orange-50 px-2.5 py-2 rounded-full cursor-pointer border-none hover:bg-orange-100 transition-colors">
+                        <span>⚠️ Không chuyên môn ({others.length} người)</span>
+                        <span>{showOthers ? "▲ Ẩn" : "▼ Hiện"}</span>
+                      </button>
+                      {showOthers && (
+                        <div className="space-y-2 mt-2">
+                          {others.map(m => renderAthleteCard(m, false))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Không có VĐV phù hợp */}
+                  {suitable.length === 0 && (
+                    <div className="text-center py-4 text-orange-500 bg-orange-50 rounded-xl">
+                      ⚠️ Không có VĐV nào có chuyên môn phù hợp với <strong>{selectedTournament.sportName}</strong>.
+                      Bạn vẫn có thể chọn VĐV bên dưới.
+                    </div>
+                  )}
                 </div>
               )}
 
