@@ -1,4 +1,4 @@
-import { Trophy, LayoutDashboard, Users, CalendarDays, AlertTriangle, LogOut } from 'lucide-react';
+import { Trophy, LayoutDashboard, Users, CalendarDays, AlertTriangle, LogOut, BarChart3 } from 'lucide-react';
 import { Link, useLocation,useNavigate } from 'react-router-dom';
 import { Modal } from 'antd'; // ✨ Import Modal từ antd
 
@@ -31,6 +31,7 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
     { path: '/organizer/registrations', label: 'Quản lý Đăng ký & Đội', icon: Users },
     { path: '/organizer/groups-schedule', label: 'Bảng đấu & Lịch trình', icon: CalendarDays },
     { path: '/operations', label: 'Vận hành & Sự cố', icon: AlertTriangle },
+    { path: '/organizer/standings', label: 'Bảng xếp hạng', icon: BarChart3}
   ];
 
   return (

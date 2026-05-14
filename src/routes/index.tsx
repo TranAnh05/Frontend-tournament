@@ -18,23 +18,17 @@ import AdminDashboardPage from "@/features/admin/pages/AdminDashboardPage";
 import RosterPage from "@/features/club/pages/RosterPage";
 import RefereeAssignedMatchesPage from "@/features/referee/pages/RefereeAssignedMatchesPage";
 import RefereeMatchActionPage from "@/features/referee/pages/RefereeMatchActionPage";
-import MainLayout from '../features/tournaments/pages/ORGANIZER/MainLayout';
-import DashboardPage from '../features/tournaments/pages/ORGANIZER/DashboardPage';
-import Regis from '../features/tournaments/pages/ORGANIZER/RegistrationPage';
-import GroupsAndSchedulePage from '../features/tournaments/pages/ORGANIZER/GroupsAndSchedulePage';
+import MainLayout from "../features/tournaments/pages/ORGANIZER/MainLayout";
+import DashboardPage from "../features/tournaments/pages/ORGANIZER/DashboardPage";
+import Regis from "../features/tournaments/pages/ORGANIZER/RegistrationPage";
+import GroupsAndSchedulePage from "../features/tournaments/pages/ORGANIZER/GroupsAndSchedulePage";
+import AthleteDashboardLayout from "@/features/athlete/layout/AthleteDashboardLayout";
+import ClubListPage from "@/features/athlete/pages/ClubListPage";
+import ApplicationsPage from "@/features/athlete/pages/ApplicationsPage";
+import ProfilePage from "@/features/athlete/pages/ProfilePage";
+import AthleteRegisterPage from "@/features/athlete/pages/AthleteRegisterPage";
+import StandingsPage from "../features/tournaments/pages/ORGANIZER/StandingsPage";
 
-import AthleteDashboardLayout from '@/features/athlete/layout/AthleteDashboardLayout';
-import ClubListPage from '@/features/athlete/pages/ClubListPage';
-import ApplicationsPage from '@/features/athlete/pages/ApplicationsPage';
-import ProfilePage from '@/features/athlete/pages/ProfilePage';
-import AthleteRegisterPage from '@/features/athlete/pages/AthleteRegisterPage';
-
-
-const AthleteDashboard = () => (
-    <div className="p-10">
-        <h1>Dashboard Vận Động Viên</h1>
-    </div>
-);
 const Unauthorized = () => (
     <div className="p-10 text-red-500">
         <h1>403 - Không có quyền truy cập</h1>
@@ -56,9 +50,9 @@ export const router = createBrowserRouter([
         element: <RegisterPage />,
     },
     {
-    path: "/athlete/register",        // ← THÊM
-    element: <AthleteRegisterPage />, // ← THÊM
-},
+        path: "/athlete/register", // ← THÊM
+        element: <AthleteRegisterPage />, // ← THÊM
+    },
     {
         path: "/unauthorized",
         element: <Unauthorized />,
@@ -97,41 +91,45 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute allowedRoles={["ROLE_REFEREE"]} />,
         children: [
             { path: "/referee", element: <RefereeAssignedMatchesPage /> },
-            {path: "/referee/:matchId", element: <RefereeMatchActionPage />}
+            { path: "/referee/:matchId", element: <RefereeMatchActionPage /> },
         ],
     },
 
     {
         element: <ProtectedRoute allowedRoles={["ROLE_ORGANIZER"]} />,
         children: [
-            { path: "/organizer", element: <MainLayout />,
-            children: [
-                {
-                  
-                    index: true, 
-                    element: <DashboardPage /> 
-                },
-            
             {
-                path: "tournaments",
-                element: <TournamentListPage /> ,
-                children: [ 
-                   ],
+                path: "/organizer",
+                element: <MainLayout />,
+                children: [
+                    {
+                        index: true,
+                        element: <DashboardPage />,
+                    },
+
+                    {
+                        path: "tournaments",
+                        element: <TournamentListPage />,
+                        children: [],
+                    },
+                    {
+                        path: "/organizer/tournaments/:id",
+                        element: <TournamentDetailPage />,
+                    },
+                    {
+                        path: "/organizer/registrations",
+                        element: <Regis />,
+                    },
+                    {
+                        path: "/organizer/groups-schedule",
+                        element: <GroupsAndSchedulePage />,
+                    },
+                    {
+                        path: "standings",
+                        element: <StandingsPage />,
+                    },
+                ],
             },
-            {
-                path: "/organizer/tournaments/:id",
-                element: <TournamentDetailPage />,
-            },
-            {
-                path: "/organizer/registrations",
-                element: <Regis/>,
-            },
-            {
-                path: "/organizer/groups-schedule",
-                element: <GroupsAndSchedulePage />,
-            }
-             ],
-                 },
         ],
     },
     {
@@ -151,17 +149,25 @@ export const router = createBrowserRouter([
     },
     // Dành riêng cho Vận động viên (Athlete)
     {
-    element: <ProtectedRoute allowedRoles={['ROLE_ATHLETE']} />,
-    children: [{
-      element: <AthleteDashboardLayout />,
-      children: [
-        { path: '/athlete',              element: <Navigate to="/athlete/clubs" replace /> },
-        { path: '/athlete/clubs',        element: <ClubListPage /> },
-        { path: '/athlete/applications', element: <ApplicationsPage /> },
-        { path: '/athlete/profile', element: <ProfilePage /> },
-      ],
-    }],
-  },
+        element: <ProtectedRoute allowedRoles={["ROLE_ATHLETE"]} />,
+        children: [
+            {
+                element: <AthleteDashboardLayout />,
+                children: [
+                    {
+                        path: "/athlete",
+                        element: <Navigate to="/athlete/clubs" replace />,
+                    },
+                    { path: "/athlete/clubs", element: <ClubListPage /> },
+                    {
+                        path: "/athlete/applications",
+                        element: <ApplicationsPage />,
+                    },
+                    { path: "/athlete/profile", element: <ProfilePage /> },
+                ],
+            },
+        ],
+    },
 
     // --- ĐIỀU HƯỚNG MẶC ĐỊNH ---
     {
