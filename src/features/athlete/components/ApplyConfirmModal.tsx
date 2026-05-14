@@ -3,11 +3,27 @@ import { athletePublicApi } from '../api/athletePublicApi';
 import type { AthleteProfileResponse, UpdateAthleteProfileRequest } from '../types';
 import { toast } from 'react-toastify';
 
-const POSITIONS = [
-  'Thủ môn', 'Trung vệ', 'Hậu vệ cánh', 'Tiền vệ phòng ngự',
-  'Tiền vệ trung tâm', 'Tiền vệ công', 'Tiền vệ cánh',
-  'Tiền đạo cánh', 'Tiền đạo cắm', 'Trung phong',
-];
+// Vị trí thi đấu theo từng môn thể thao
+const POSITIONS_BY_SPORT: Record<string, string[]> = {
+  'Bóng đá sân 7': [
+    'Thủ môn', 'Trung vệ', 'Hậu vệ cánh',
+    'Tiền vệ phòng ngự', 'Tiền vệ trung tâm', 'Tiền vệ công',
+    'Tiền vệ cánh', 'Tiền đạo cánh', 'Tiền đạo cắm', 'Trung phong',
+  ],
+  'Bóng rổ 5x5': [
+    'Point Guard (Hậu vệ tổ chức)',
+    'Shooting Guard (Hậu vệ ghi điểm)',
+    'Small Forward (Tiền phong nhỏ)',
+    'Power Forward (Tiền phong lớn)',
+    'Center (Trung phong)',
+  ],
+  'Cầu lông': [
+    'Đơn nam', 'Đơn nữ',
+    'Đôi nam', 'Đôi nữ', 'Đôi hỗn hợp',
+  ],
+};
+
+const ALL_SPORTS = Object.keys(POSITIONS_BY_SPORT);
 
 interface Props {
   clubId: number;
@@ -17,7 +33,7 @@ interface Props {
   onClose: () => void;
 }
 
-export default function ApplyConfirmModal({ clubId, clubName, applying, onConfirm, onClose }: Props) {
+export default function ApplyConfirmModal({ clubId: _clubId, clubName, applying, onConfirm, onClose }: Props) {
   const [profile, setProfile] = useState<AthleteProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -28,6 +44,7 @@ export default function ApplyConfirmModal({ clubId, clubName, applying, onConfir
     identityNumber: '',
     dateOfBirth: '',
     preferredNumber: '',
+    preferredSport: '',
     preferredPosition: '',
   });
 
@@ -41,14 +58,25 @@ export default function ApplyConfirmModal({ clubId, clubName, applying, onConfir
           identityNumber: p.identityNumber ?? '',
           dateOfBirth: p.dateOfBirth ?? '',
           preferredNumber: p.preferredNumber?.toString() ?? '',
+          preferredSport: '',
           preferredPosition: p.preferredPosition ?? '',
         });
       })
       .finally(() => setLoading(false));
   }, []);
 
-  const setField = (field: string, value: string) =>
-    setForm(f => ({ ...f, [field]: value }));
+  // Vị trí theo môn đang chọn
+  const positions = form.preferredSport
+    ? (POSITIONS_BY_SPORT[form.preferredSport] ?? [])
+    : [];
+
+  const setField = (field: string, value: string) => {
+    if (field === 'preferredSport') {
+      setForm(f => ({ ...f, preferredSport: value, preferredPosition: '' }));
+    } else {
+      setForm(f => ({ ...f, [field]: value }));
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -95,21 +123,16 @@ export default function ApplyConfirmModal({ clubId, clubName, applying, onConfir
 
           {!loading && profile && (
             <>
-              {/* Section title */}
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm font-bold text-gray-700">👤 Thông tin hồ sơ của bạn</p>
                 {!editing ? (
-                  <button
-                    onClick={() => setEditing(true)}
-                    className="text-xs text-blue-600 hover:underline font-semibold cursor-pointer"
-                  >
+                  <button onClick={() => setEditing(true)}
+                    className="text-xs text-blue-600 hover:underline font-semibold cursor-pointer">
                     ✏️ Chỉnh sửa
                   </button>
                 ) : (
-                  <button
-                    onClick={() => setEditing(false)}
-                    className="text-xs text-gray-500 hover:underline cursor-pointer"
-                  >
+                  <button onClick={() => setEditing(false)}
+                    className="text-xs text-gray-500 hover:underline cursor-pointer">
                     Hủy sửa
                   </button>
                 )}
@@ -119,14 +142,14 @@ export default function ApplyConfirmModal({ clubId, clubName, applying, onConfir
               {!editing && (
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: 'Họ và tên',       value: profile.fullName },
-                    { label: 'Email',            value: profile.email },
-                    { label: 'Số điện thoại',   value: profile.phoneNumber ?? '—' },
-                    { label: 'CCCD/Hộ chiếu',   value: profile.identityNumber },
-                    { label: 'Ngày sinh',        value: profile.dateOfBirth },
-                    { label: 'Số áo yêu thích',  value: profile.preferredNumber?.toString() ?? '—' },
+                    { label: 'Họ và tên', value: profile.fullName },
+                    { label: 'Email', value: profile.email },
+                    { label: 'Số điện thoại', value: profile.phoneNumber ?? '—' },
+                    { label: 'CCCD/Hộ chiếu', value: profile.identityNumber },
+                    { label: 'Ngày sinh', value: profile.dateOfBirth },
+                    { label: 'Số áo yêu thích', value: profile.preferredNumber?.toString() ?? '—' },
                     { label: 'Vị trí sở trường', value: profile.preferredPosition ?? '—' },
-                    { label: 'Thể trạng',        value: profile.healthStatus === 'FIT' ? '✅ Khỏe mạnh' : '🤕 Chấn thương' },
+                    { label: 'Thể trạng', value: profile.healthStatus === 'FIT' ? '✅ Khỏe mạnh' : '🤕 Chấn thương' },
                   ].map(item => (
                     <div key={item.label} className="bg-gray-50 rounded-xl px-4 py-3">
                       <div className="text-xs text-gray-400">{item.label}</div>
@@ -171,28 +194,42 @@ export default function ApplyConfirmModal({ clubId, clubName, applying, onConfir
                         onChange={e => setField('preferredNumber', e.target.value)}
                         className={inputClass} placeholder="VD: 10" />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Vị trí sở trường</label>
-                      <select value={form.preferredPosition}
-                        onChange={e => setField('preferredPosition', e.target.value)}
+
+                    {/* Môn thể thao — chiếm full width */}
+                    <div className="col-span-2">
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Môn thể thao sở trường</label>
+                      <select value={form.preferredSport}
+                        onChange={e => setField('preferredSport', e.target.value)}
                         className={inputClass}>
-                        <option value="">-- Chọn vị trí --</option>
-                        {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                        <option value="">-- Chọn môn thể thao --</option>
+                        {ALL_SPORTS.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+
+                    {/* Vị trí — chiếm full width, disable nếu chưa chọn môn */}
+                    <div className="col-span-2">
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Vị trí sở trường</label>
+                      <select
+                        value={form.preferredPosition}
+                        onChange={e => setField('preferredPosition', e.target.value)}
+                        disabled={!form.preferredSport}
+                        className={`${inputClass} ${!form.preferredSport ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <option value="">
+                          {form.preferredSport ? '-- Chọn vị trí --' : '-- Chọn môn thể thao trước --'}
+                        </option>
+                        {positions.map(p => <option key={p} value={p}>{p}</option>)}
                       </select>
                     </div>
                   </div>
 
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="w-full py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-bold transition-all cursor-pointer disabled:opacity-60"
-                  >
+                  <button onClick={handleSave} disabled={saving}
+                    className="w-full py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-bold transition-all cursor-pointer disabled:opacity-60">
                     {saving ? 'Đang lưu...' : '💾 Lưu thay đổi'}
                   </button>
                 </div>
               )}
 
-              {/* Warning */}
               <div className="mt-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-4 py-3 rounded-xl">
                 ⚠️ Bạn chỉ được ứng tuyển một CLB tại một thời điểm. Sau khi nộp đơn, hãy chờ CLB phê duyệt.
               </div>
@@ -206,11 +243,8 @@ export default function ApplyConfirmModal({ clubId, clubName, applying, onConfir
             className="flex-1 px-4 py-2.5 rounded-xl border text-gray-600 text-sm font-semibold hover:bg-gray-50 cursor-pointer">
             Hủy
           </button>
-          <button
-            onClick={onConfirm}
-            disabled={applying || loading || editing}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-          >
+          <button onClick={onConfirm} disabled={applying || loading || editing}
+            className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
             {applying ? '⏳ Đang nộp...' : '✅ Xác nhận ứng tuyển'}
           </button>
         </div>

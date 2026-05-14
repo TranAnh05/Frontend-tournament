@@ -30,7 +30,8 @@ export default function MembersPage() {
     setRejectModal(true);
   };
 
-  const colSpan = tab === "APPROVED" ? 8 : 4;
+  const approvedColSpan = 8;
+  const pendingColSpan = 8;
 
   return (
     <div className="flex flex-col gap-4">
@@ -72,6 +73,9 @@ export default function MembersPage() {
               <Th>Họ tên</Th>
               <Th>CCCD</Th>
               <Th>Ngày sinh</Th>
+              {tab === "PENDING" && <Th>Số điện thoại</Th>}
+              {tab === "PENDING" && <Th>Số áo</Th>}
+              {tab === "PENDING" && <Th>Vị trí sở trường</Th>}
               {tab === "APPROVED" && <Th>Số áo</Th>}
               {tab === "APPROVED" && <Th>Vị trí</Th>}
               {tab === "APPROVED" && <Th>Vai trò</Th>}
@@ -82,27 +86,54 @@ export default function MembersPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={colSpan} className="py-10 text-center text-gray-500">⏳ Đang tải...</td>
+                <td colSpan={tab === "APPROVED" ? approvedColSpan : pendingColSpan}
+                  className="py-10 text-center text-gray-500">⏳ Đang tải...</td>
               </tr>
             )}
             {!loading && members.length === 0 && (
               <tr>
-                <td colSpan={colSpan} className="py-10 text-center text-gray-500">
+                <td colSpan={tab === "APPROVED" ? approvedColSpan : pendingColSpan}
+                  className="py-10 text-center text-gray-500">
                   {tab === "PENDING" ? "Không có đơn chờ duyệt" : "Chưa có thành viên"}
                 </td>
               </tr>
             )}
             {members.map((m) => (
               <tr key={m.memberId} className="transition-colors hover:bg-gray-50">
+                {/* Họ tên + email */}
                 <Td>
                   <div className="font-semibold text-gray-900">{m.fullName}</div>
                   <div className="text-[11px] text-gray-500">{m.email}</div>
                 </Td>
-                <Td className="font-mono text-xs text-gray-500">{m.identityNumber}</Td>
+
+                {/* CCCD */}
+                <Td className="font-mono text-xs text-gray-500">{m.identityNumber || "—"}</Td>
+
+                {/* Ngày sinh */}
                 <Td className="text-xs">
                   {m.dateOfBirth ? new Date(m.dateOfBirth).toLocaleDateString("vi-VN") : "—"}
                 </Td>
 
+                {/* --- Tab PENDING: thêm SĐT, Số áo, Vị trí --- */}
+                {tab === "PENDING" && (
+                  <Td className="text-xs text-gray-700">
+                    {(m as any).phoneNumber || "—"}
+                  </Td>
+                )}
+                {tab === "PENDING" && (
+                  <Td>
+                    <span className="font-extrabold text-[15px]" style={{ color: "#0D7A4E" }}>
+                      {m.preferredNumber ? `#${m.preferredNumber}` : "—"}
+                    </span>
+                  </Td>
+                )}
+                {tab === "PENDING" && (
+                  <Td className="text-xs text-gray-700">
+                    {m.preferredPosition || "—"}
+                  </Td>
+                )}
+
+                {/* --- Tab APPROVED --- */}
                 {tab === "APPROVED" && (
                   <Td>
                     <span className="font-extrabold text-[15px]" style={{ color: "#0D7A4E" }}>
@@ -117,7 +148,9 @@ export default function MembersPage() {
                   <Td>
                     <select
                       value={m.clubRole}
-                     onChange={async (e) => await assignRole(m.memberId, e.target.value as "MEMBER" | "CAPTAIN" | "HEAD_COACH")}
+                      onChange={async (e) =>
+                        await assignRole(m.memberId, e.target.value as "MEMBER" | "CAPTAIN" | "HEAD_COACH")
+                      }
                       className="border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-900 cursor-pointer focus:outline-none focus:ring-1 focus:ring-green-500"
                     >
                       {ROLE_OPTIONS.map((r) => (
@@ -128,18 +161,17 @@ export default function MembersPage() {
                 )}
                 {tab === "APPROVED" && (
                   <Td>
-                    <span
-                      className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
-                        m.healthStatus === "FIT"
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-red-50 text-red-500"
-                      }`}
-                    >
+                    <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                      m.healthStatus === "FIT"
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-red-50 text-red-500"
+                    }`}>
                       {m.healthStatus === "FIT" ? "Khỏe mạnh" : "Chấn thương"}
                     </span>
                   </Td>
                 )}
 
+                {/* Thao tác */}
                 <Td>
                   <div className="flex gap-1.5">
                     {tab === "PENDING" ? (
@@ -153,26 +185,18 @@ export default function MembersPage() {
                       </>
                     ) : (
                       <>
-                        <Btn
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            openEdit(m.memberId, {
-                              preferredNumber: m.preferredNumber,
-                              preferredPosition: m.preferredPosition,
-                              healthStatus: m.healthStatus,
-                            })
-                          }
-                        >
+                        <Btn size="sm" variant="outline"
+                          onClick={() => openEdit(m.memberId, {
+                            preferredNumber: m.preferredNumber,
+                            preferredPosition: m.preferredPosition,
+                            healthStatus: m.healthStatus,
+                          })}>
                           ✏️ Sửa
                         </Btn>
-                        <Btn
-                          size="sm"
-                          variant="danger"
+                        <Btn size="sm" variant="danger"
                           onClick={async () => {
                             if (confirm(`Xóa ${m.fullName} khỏi CLB?`)) await remove(m.memberId);
-                          }}
-                        >
+                          }}>
                           🗑
                         </Btn>
                       </>
@@ -197,14 +221,11 @@ export default function MembersPage() {
           </Field>
           <div className="flex gap-2 justify-end mt-2">
             <Btn onClick={() => setRejectModal(false)}>Hủy</Btn>
-            <Btn
-              variant="danger"
-              onClick={async () => {
-                if (!rejectReason.trim()) return alert("Vui lòng nhập lý do!");
-                await reject(selected, rejectReason);
-                setRejectModal(false);
-              }}
-            >
+            <Btn variant="danger" onClick={async () => {
+              if (!rejectReason.trim()) return alert("Vui lòng nhập lý do!");
+              await reject(selected, rejectReason);
+              setRejectModal(false);
+            }}>
               ❌ Xác nhận từ chối
             </Btn>
           </div>
@@ -217,9 +238,7 @@ export default function MembersPage() {
           <Field label="Số áo">
             <Input
               value={String(editForm.preferredNumber ?? "")}
-              onChange={(v) =>
-                setEditForm({ ...editForm, preferredNumber: v ? parseInt(v) : undefined })
-              }
+              onChange={(v) => setEditForm({ ...editForm, preferredNumber: v ? parseInt(v) : undefined })}
               placeholder="VD: 10"
               type="number"
             />
@@ -234,27 +253,20 @@ export default function MembersPage() {
           <Field label="Thể trạng">
             <select
               value={editForm.healthStatus ?? "FIT"}
-              onChange={(e) =>
-                setEditForm({ ...editForm, healthStatus: e.target.value as "FIT" | "INJURED" })
-              }
+              onChange={(e) => setEditForm({ ...editForm, healthStatus: e.target.value as "FIT" | "INJURED" })}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               {HEALTH_OPTIONS.map((h) => (
-                <option key={h} value={h}>
-                  {h === "FIT" ? "Khỏe mạnh" : "Chấn thương"}
-                </option>
+                <option key={h} value={h}>{h === "FIT" ? "Khỏe mạnh" : "Chấn thương"}</option>
               ))}
             </select>
           </Field>
           <div className="flex gap-2 justify-end mt-2">
             <Btn onClick={() => setEditModal(false)}>Hủy</Btn>
-            <Btn
-              variant="primary"
-              onClick={async () => {
-                await updateAthlete(selected, editForm);
-                setEditModal(false);
-              }}
-            >
+            <Btn variant="primary" onClick={async () => {
+              await updateAthlete(selected, editForm);
+              setEditModal(false);
+            }}>
               💾 Lưu
             </Btn>
           </div>
