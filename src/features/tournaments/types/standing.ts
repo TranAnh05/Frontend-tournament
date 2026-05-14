@@ -35,3 +35,24 @@ export interface TournamentLookupResponse {
     status: string;
     sportName: string; // Dùng để hiển thị Icon (Bóng đá, Cầu lông...)
 }
+
+export interface ClubOverallStandingDto {
+    overallRank: number;     // Thứ hạng tổng thể toàn giải
+    clubName: string;
+    logoUrl: string | null;
+    highestStageName: string; // Vòng đấu cao nhất đạt tới
+    totalMatches: number;
+    totalWon: number;
+    totalDrawn: number;
+    totalLost: number;
+    totalGoalsScored: number;   
+    totalGoalsAgainst: number;  
+    totalDifference: number;    
+    totalPoints: number;        
+}
+
+export interface OverallStandingResponse {
+    tournamentId: number;
+    tournamentName: string;
+    rankings: ClubOverallStandingDto[];
+}
