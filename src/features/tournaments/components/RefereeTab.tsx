@@ -3,13 +3,16 @@ import { Table, Button, Tag, message, Modal, Select, Spin, Avatar,Radio } from '
 import { Users, ShieldCheck, Clock, CalendarDays } from 'lucide-react';
 import { tournamentApi } from '../api/tournamentApi'; // Sửa đường dẫn nếu cần
 
+
+// 1. Cập nhật Interface
 interface RefereeTabProps {
   tournamentId: number | string;
+  matches: any[];        // Nhận từ Cha
+  loading: boolean;      // Nhận từ Cha
+  onRefresh: () => void; // Hàm gọi Cha tải lại DB
 }
-
-const RefereeTab: React.FC<RefereeTabProps> = ({ tournamentId }) => {
-  const [matches, setMatches] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+const RefereeTab: React.FC<RefereeTabProps> = ({ tournamentId, matches, loading, onRefresh }) => {
+ 
 
   // States cho Modal phân công
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -19,69 +22,106 @@ const RefereeTab: React.FC<RefereeTabProps> = ({ tournamentId }) => {
   const [selectedRefereeId, setSelectedRefereeId] = useState<number | null>(null);
   const [assigning, setAssigning] = useState(false);
 
-  // 1. Lấy toàn bộ danh sách trận đấu của giải
-  const fetchMatches = async () => {
-    if (!tournamentId) return;
-    setLoading(true);
-    try {
-      const res = await tournamentApi.getMatchesByTournament(tournamentId);
-      const responseData = res.data ? res.data : res;
-      setMatches(responseData.result || []);
-    } catch (error) {
-      console.error(error);
-      message.error("Lỗi khi tải danh sách trận đấu");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [availableCourts, setAvailableCourts] = useState<any[]>([]);
+  const [selectedCourtId, setSelectedCourtId] = useState<number | null>(null);
 
-  useEffect(() => {
-    fetchMatches();
-  }, [tournamentId]);
+  // // 1. Lấy toàn bộ danh sách trận đấu của giải
+  // const fetchMatches = async () => {
+  //   if (!tournamentId) return;
+  //   setLoading(true);
+  //   try {
+  //     const res = await tournamentApi.getMatchesByTournament(tournamentId);
+  //     const responseData = res.data ? res.data : res;
+  //     setMatches(responseData.result || []);
+  //   } catch (error) {
+  //     console.error(error);
+  //     message.error("Lỗi khi tải danh sách trận đấu");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  // 2. Mở Modal và lấy danh sách Trọng tài RẢNH cho trận đó
+  // useEffect(() => {
+  //   fetchMatches();
+  // }, [tournamentId]);
+
+ // 2. Mở Modal và lấy danh sách Trọng tài & Sân RẢNH cho trận đó
   const handleOpenAssignModal = async (match: any) => {
+    // 1. Cập nhật state ban đầu cho Modal
     setSelectedMatch(match);
     setSelectedRefereeId(match.referee?.id || null);
+    setSelectedCourtId(match.court?.id || null); 
     setIsModalVisible(true);
     setFetchingReferees(true);
     
     try {
-      const res = await tournamentApi.getAvailableRefereesForMatch(match.id);
-      const responseData = res.data ? res.data : res;
-      setAvailableReferees(responseData.result || []);
+      // ✨ Lấy danh sách Trọng tài đang rảnh
+      const refRes: any = await tournamentApi.getAvailableRefereesForMatch(match.id);
+      const refData = refRes.data ? refRes.data : refRes;
+      setAvailableReferees(refData.result || []);
+
+      // ✨ Lấy danh sách Sân thi đấu đang rảnh
+      const courtRes: any = await tournamentApi.getAvailableCourtsForMatch(match.id);
+      const courtData = courtRes.data ? courtRes.data : courtRes;
+      setAvailableCourts(courtData.result || []);
+
     } catch (error) {
       console.error(error);
-      message.error("Không thể lấy danh sách trọng tài trống lịch!");
+      message.error("Không thể lấy danh sách trọng tài/sân trống lịch!");
     } finally {
       setFetchingReferees(false);
     }
   };
 
-  // 3. Xử lý bấm nút Lưu phân công
+// 3. Xử lý bấm nút Lưu phân công
   const handleAssignReferee = async () => {
-    if (!selectedRefereeId) {
-      message.warning("Vui lòng chọn một trọng tài!");
+    // ✨ 1. Lấy dữ liệu cũ của trận đấu đang chọn để làm hệ quy chiếu
+    const currentRefereeId = selectedMatch?.referee?.id || null;
+    const currentCourtId = selectedMatch?.court?.id || null;
+
+    // ✨ 2. Kiểm tra xem người dùng có thực sự thay đổi gì không?
+    const isRefereeChanged = selectedRefereeId !== currentRefereeId;
+    const isCourtChanged = selectedCourtId !== currentCourtId;
+
+    // Nếu mở Modal lên mà không sửa gì cả rồi bấm Lưu -> Báo nhắc nhở luôn
+    if (!isRefereeChanged && !isCourtChanged) {
+      message.info("Bạn chưa thay đổi Trọng tài hay Sân thi đấu nào cả!");
       return;
     }
+
     setAssigning(true);
+    
     try {
-      await tournamentApi.assignRefereeToMatch(selectedMatch.id, {
-        refereeId: selectedRefereeId,
-        role: "MAIN" 
-      });
-      message.success("Phân công trọng tài thành công!");
+      // ✨ 3. Chỉ gọi API Trọng tài NẾU CÓ THAY ĐỔI và có chọn Trọng tài mới
+      if (isRefereeChanged && selectedRefereeId) {
+        await tournamentApi.assignRefereeToMatch(selectedMatch.id, {
+          refereeId: selectedRefereeId,
+          role: "MAIN" 
+        });
+      }
+
+      // ✨ 4. Chỉ gọi API Sân thi đấu NẾU CÓ THAY ĐỔI và có chọn Sân mới
+      if (isCourtChanged && selectedCourtId) {
+        await tournamentApi.assignCourtToMatch(selectedMatch.id, selectedCourtId);
+      }
+
+      message.success("Cập nhật phân công thành công!");
       setIsModalVisible(false);
-      fetchMatches(); // Gọi lại để update bảng dữ liệu
+      
+      // Load lại dữ liệu ở Component Cha
+      if (onRefresh) {
+        onRefresh(); 
+      }
+      
     } catch (error) {
       console.error(error);
-      message.error("Có lỗi xảy ra khi phân công!");
+      message.error("Có lỗi xảy ra khi cập nhật!");
     } finally {
       setAssigning(false);
     }
   };
    const [filterMode, setFilterMode] = useState<'ALL' | 'UNASSIGNED'>('UNASSIGNED');
-  const displayedMatches = matches.filter(match => {
+  const displayedMatches = matches.filter((match : any )=> {
     if (filterMode === 'UNASSIGNED') {
       return !match.referee; // Chỉ trả về những trận referee bị null/undefined
     }
@@ -162,7 +202,7 @@ const RefereeTab: React.FC<RefereeTabProps> = ({ tournamentId }) => {
           buttonStyle="solid"
         >
           <Radio.Button value="UNASSIGNED">
-            Chưa phân công ({matches.filter(m => !m.referee).length})
+            Chưa phân công ({matches.filter((m: any) => !m.referee).length})
           </Radio.Button>
           <Radio.Button value="ALL">
             Tất cả trận đấu ({matches.length})
@@ -195,7 +235,7 @@ const RefereeTab: React.FC<RefereeTabProps> = ({ tournamentId }) => {
         confirmLoading={assigning}
         okText="Lưu phân công"
         cancelText="Hủy"
-        destroyOnClose
+        destroyOnHidden
         centered
         okButtonProps={{ className: "bg-blue-600" }}
       >
@@ -242,6 +282,25 @@ const RefereeTab: React.FC<RefereeTabProps> = ({ tournamentId }) => {
                   notFoundContent="Không có trọng tài nào trống lịch lúc này!"
                 />
               )}
+            </div>
+            {/* Dropdown chọn Sân */}
+            <div className="space-y-2 mt-4">
+              <label className="text-sm font-medium text-slate-700 flex items-center gap-1">
+                Chọn Sân thi đấu
+              </label>
+              <Select
+                showSearch
+                placeholder="Chọn một sân đang trống..."
+                className="w-full"
+                size="large"
+                value={selectedCourtId}
+                onChange={(val) => setSelectedCourtId(val)}
+                options={availableCourts.map(c => ({
+                  value: c.id,
+                  label: c.courtName || c.name, // Thay bằng tên trường của bạn
+                }))}
+                notFoundContent="Không có sân hợp lệ nào trống lịch!"
+              />
             </div>
             <p className="text-xs text-slate-500 italic">
               * Danh sách này chỉ hiển thị những trọng tài KHÔNG bị trùng lịch trong khoảng +/- 2.5 tiếng so với thời gian diễn ra trận đấu.

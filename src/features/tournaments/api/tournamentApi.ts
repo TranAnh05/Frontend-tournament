@@ -59,6 +59,17 @@ export const tournamentApi = {
 
   assignRefereeToMatch: (matchId: number | string, data: AssignRefereeRequest) => {
     return api.post(`tournaments/matches/${matchId}/referees`, data);
+  },
+  // Lấy danh sách sân hợp lệ và đang trống
+  getAvailableCourtsForMatch: (matchId: number | string) => {
+    return api.get(`/tournaments/${matchId}/available-courts`);
+  },
+
+  // Gán sân cho trận
+  assignCourtToMatch: (matchId: number | string, courtId: number | string) => {
+    return api.patch(`/tournaments/${matchId}/court`, null, {
+      params: { courtId }
+    });
   }
 };
 export const registrationApi = {

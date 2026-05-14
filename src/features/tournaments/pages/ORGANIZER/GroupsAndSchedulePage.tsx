@@ -45,6 +45,27 @@ const GroupsAndSchedulePage = () => {
       setLoadingList(false);
     }
   };
+  const [matches, setMatches] = useState<any[]>([]);
+  const [loadingMatches, setLoadingMatches] = useState(false);
+  const fetchAllMatches = async () => {
+    if (!selectedTour?.id) return;
+    setLoadingMatches(true);
+    try {
+      const res = await tournamentApi.getMatchesByTournament(selectedTour.id);
+      const responseData = res.data ? res.data : res;
+      setMatches(responseData.result || []);
+    } catch (error) {
+      console.error(error);
+      message.error("Lỗi khi tải dữ liệu trận đấu");
+    } finally {
+      setLoadingMatches(false);
+    }
+  };
+  useEffect(() => {
+    fetchAllMatches();
+  }, [selectedTour?.id]);
+
+
 
   // Tự động fetch khi đổi trang
   useEffect(() => {
@@ -61,12 +82,22 @@ const GroupsAndSchedulePage = () => {
     {
       key: 'referee',
       label: <span className="flex items-center gap-2"><Users size={18} /> Phân công trọng tài</span>,
-      children: <RefereeTab tournamentId={selectedTour?.id} />,
+       children: <RefereeTab 
+                  tournamentId={selectedTour?.id} 
+                  matches={matches} 
+                  loading={loadingMatches} 
+                  onRefresh={fetchAllMatches} 
+                />,
     },
     {
       key: 'schedule',
       label: <span className="flex items-center gap-2"><Clock size={18} /> Lịch thi đấu</span>,
-    children: <ScheduleTab tournamentId={selectedTour?.id} />,
+    children: <ScheduleTab 
+                  tournamentId={selectedTour?.id} 
+                  matches={matches} 
+                  loading={loadingMatches} 
+                  onRefresh={fetchAllMatches} 
+                />,
     }
   ];
 

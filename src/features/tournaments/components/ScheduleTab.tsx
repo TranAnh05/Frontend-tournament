@@ -6,36 +6,38 @@ import { tournamentApi } from '../api/tournamentApi';
 
 interface ScheduleTabProps {
   tournamentId: number | string;
+  matches: any[];
+  loading: boolean;
+  onRefresh: () => void;
 }
 
-const ScheduleTab: React.FC<ScheduleTabProps> = ({ tournamentId }) => {
-  const [matches, setMatches] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+const ScheduleTab: React.FC<ScheduleTabProps> = ({ tournamentId, matches, loading, onRefresh }) => {
+  
   const [generating, setGenerating] = useState(false);
  
 
-  // Lấy danh sách trận đấu từ Backend
-  const fetchMatches = async () => {
-    if (!tournamentId) return;
-    setLoading(true);
-    try {
-      const res = await tournamentApi.getMatchesByTournament(tournamentId);
+  // // Lấy danh sách trận đấu từ Backend
+  // const fetchMatches = async () => {
+  //   if (!tournamentId) return;
+  //   setLoading(true);
+  //   try {
+  //     const res = await tournamentApi.getMatchesByTournament(tournamentId);
       
-      // Xử lý bóc vỏ Axios Interceptor an toàn
-      const responseData = res.data ? res.data : res;
-      setMatches(responseData.result || []);
+  //     // Xử lý bóc vỏ Axios Interceptor an toàn
+  //     const responseData = res.data ? res.data : res;
+  //     setMatches(responseData.result || []);
       
-    } catch (error) {
-      console.error(error);
-      message.error("Lỗi khi tải lịch thi đấu");
-    } finally {
-      setLoading(false);
-    }
-  };
+  //   } catch (error) {
+  //     console.error(error);
+  //     message.error("Lỗi khi tải lịch thi đấu");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  useEffect(() => {
-    fetchMatches();
-  }, [tournamentId]);
+  // useEffect(() => {
+  //   fetchMatches();
+  // }, [tournamentId]);
 
   // Gọi API tự động tạo lịch thi đấu (Round-Robin)
   const handleGenerateSchedule = async () => {
@@ -45,7 +47,8 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ tournamentId }) => {
       message.success("Hệ thống đã tự động sinh lịch thi đấu vòng bảng!");
       
       // Tạo lịch xong thì gọi lại API lấy danh sách để render ra màn hình
-      fetchMatches(); 
+      message.success("Sinh lịch thành công");
+      onRefresh();
     } catch (error) {
       console.error(error);
       message.error("Có lỗi xảy ra khi tạo lịch! Hoặc giải đấu này đã có lịch rồi.");
@@ -144,7 +147,7 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ tournamentId }) => {
                   {/* Cột trái: Thông tin Sân và Trọng tài */}
                   <div className="space-y-1.5 flex-1">
                     <span className="flex items-center gap-1 text-slate-500">
-                      <MapPin size={14}/> {match.stadium || "Sân chưa xếp"}
+                      <MapPin size={14}/> {match.court ? (match.court.courtName || match.court.name) : "Sân chưa xếp"}
                     </span>
                     
                     {/* ✨ Logic hiển thị Trạng thái Trọng tài */}
