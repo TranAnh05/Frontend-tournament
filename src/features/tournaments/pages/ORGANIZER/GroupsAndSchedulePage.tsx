@@ -6,12 +6,16 @@ import { Trophy, CalendarDays, Users, LayoutList, CheckCircle, Clock } from 'luc
  import { useTournamentDetail } from '@/features/tournaments/hooks/useTournamentDetail';
  import DrawTab from './../../components/DrawTab';
 
+ import ScheduleTab from '../../components/ScheduleTab';
+ import RefereeTab from '../../components/RefereeTab';
+
 const GroupsAndSchedulePage = () => {
   // --- STATE DANH SÁCH GIẢI ---
   const [tournaments, setTournaments] = useState<any[]>([]);
   const [loadingList, setLoadingList] = useState(false);
   const [totalTours, setTotalTours] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
+  
   
   // State quản lý giải đấu đang được chọn
   const [selectedTour, setSelectedTour] = useState<any>(null);
@@ -57,12 +61,12 @@ const GroupsAndSchedulePage = () => {
     {
       key: 'referee',
       label: <span className="flex items-center gap-2"><Users size={18} /> Phân công trọng tài</span>,
-      children: <div className="p-6 text-center text-slate-500">Giao diện trọng tài (Đang xây dựng)</div>,
+      children: <RefereeTab tournamentId={selectedTour?.id} />,
     },
     {
       key: 'schedule',
       label: <span className="flex items-center gap-2"><Clock size={18} /> Lịch thi đấu</span>,
-      children: <div className="p-6 text-center text-slate-500">Giao diện lịch thi đấu (Đang xây dựng)</div>,
+    children: <ScheduleTab tournamentId={selectedTour?.id} />,
     }
   ];
 
