@@ -63,3 +63,7 @@ export interface AssignRefereeRequest {
   refereeId: number | string;
   role?: string; // Không bắt buộc, backend đã set mặc định là MAIN
 }
+// Định nghĩa cấu trúc request gửi lên Backend
+export interface FirstKnockoutRoundRequest {
+  qualifiedClubIds: number[];
+}
