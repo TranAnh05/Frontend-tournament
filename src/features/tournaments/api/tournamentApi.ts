@@ -70,7 +70,10 @@ export const tournamentApi = {
     return api.patch(`/tournaments/${matchId}/court`, null, {
       params: { courtId }
     });
-  }
+  },
+  generateFirstKnockoutRound: (tournamentId: number | string, data: { qualifiedClubIds: number[] }) => {
+    return api.post(`/tournaments/${tournamentId}/knockout/first-round`, data);
+  },
 };
 export const registrationApi = {
   // Lấy danh sách giải đang mở đăng ký
