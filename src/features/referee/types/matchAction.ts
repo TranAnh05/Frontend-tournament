@@ -18,6 +18,7 @@ export interface PeriodScoreDto {
 }
 
 export interface TeamLineupDto {
+    setsWon: number;
     clubId: number;
     clubName: string;
     logoUrl: string | null;
