@@ -1,91 +1,134 @@
-import React, { useState } from 'react';
-import { Button, Spin, message, Tag, Modal, Radio,Select } from 'antd';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Button, Spin, message, Tag, Modal, Radio, Select } from 'antd';
 import { Trophy, Swords, ShieldCheck, ListOrdered, CalendarDays } from 'lucide-react';
 import { tournamentApi } from '../api/tournamentApi';
-import { type FirstKnockoutRoundRequest } from '../types';
 
 interface KnockoutTabProps {
   tournamentId: number | string;
-  matches: any[];        // Danh sách trận đấu từ Component Cha
-  loading: boolean;      // Trạng thái loading từ Component Cha
-  onRefresh: () => void; // Hàm tải lại dữ liệu
-  clubs: any[];          // Danh sách toàn bộ đội bóng trong giải
+  clubs: any[];          
+  onRefresh?: () => void; 
 }
 
-const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, matches, loading, onRefresh, clubs }) => {
-  // --- STATES ---
+const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, clubs, onRefresh }) => {
+  // --- STATES BỐC THĂM ---
   const [generating, setGenerating] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectionMode, setSelectionMode] = useState<'auto' | 'manual'>('manual');
   const [selectedClubIds, setSelectedClubIds] = useState<number[]>([]);
-  
-  // (Dành cho tính năng tự động sau này)
-  const [autoQualifiedClubs] = useState<any[]>([]); 
 
-  // --- LOGIC LỌC DỮ LIỆU ---
-  // Lọc ra các trận đấu thuộc vòng Knockout dựa trên StageType hoặc tên GroupStage
-  const knockoutMatches = (matches as any[] || []).filter((m: any) => {
-    // Kiểm tra an toàn cho groupStage
-    const isKnockoutType = m?.groupStage?.stageType === 'KNOCKOUT';
-    
-    // Ép kiểu về string và xử lý null/undefined trước khi toLowerCase
-    const stageName = String(m?.groupStageName || m?.groupStage?.name || '').toLowerCase();
-    
-    return isKnockoutType || stageName.includes('trực tiếp');
-  });
+  // ✨ STATES LƯU TRỮ DỮ LIỆU API MỚI
+  const [bracketData, setBracketData] = useState<any>(null);
+  const [loadingBracket, setLoadingBracket] = useState<boolean>(true);
 
-  // --- XỬ LÝ API ---
- const handleConfirmGenerate = async () => {
-    // ✨ Bước 1: Xử lý mảng đầu vào để tách các chuỗi có chứa dấu cách hoặc dấu phẩy
+  // ✨ HÀM GỌI API ĐỘC LẬP CHO TAB
+  const fetchKnockoutBracket = async () => {
+    setLoadingBracket(true);
+    try {
+      const res = await tournamentApi.getKnockoutBracket(tournamentId);
+      
+      // ✨ FIX 1: Đồng bộ cách lấy data giống như GroupsAndSchedulePage.tsx
+      const responseData = res.data ? res.data : res;
+      
+      // Lấy thẳng mảng 'result' lưu vào state
+      setBracketData(responseData.result || responseData || []); 
+    } catch (error) {
+      console.error("Lỗi lấy sơ đồ nhánh:", error);
+    } finally {
+      setLoadingBracket(false);
+    }
+  };
+
+  // Tự động gọi API khi Tab được render hoặc khi tournamentId thay đổi
+  useEffect(() => {
+    if (tournamentId) {
+      fetchKnockoutBracket();
+    }
+  }, [tournamentId]);
+
+  // --- HÀM TRÍCH XUẤT DỮ LIỆU AN TOÀN ---
+  const getNextId = (m: any) => m.nextMatchId || m.next_match_id || m.nextMatch?.id;
+  const getPosition = (m: any) => m.bracketPosition ?? m.bracket_position;
+
+  const knockoutMatches = useMemo(() => {
+    // ✨ FIX 2: bracketData bây giờ chắc chắn là mảng các trận đấu, không cần filter thêm
+    return Array.isArray(bracketData) ? bracketData : [];
+  }, [bracketData]);
+
+  // ✨ BƯỚC 2: TỰ ĐỘNG PHÂN VÒNG (WORLD CUP STYLE)
+  const rounds = useMemo(() => {
+    if (knockoutMatches.length === 0) return [];
+
+    const matchMap = new Map();
+    knockoutMatches.forEach((m: any) => matchMap.set(String(m.id), m));
+
+    // Đệ quy tính độ sâu
+    const calculateDepth = (match: any): number => {
+      const nextId = getNextId(match);
+      if (!nextId) return 0;
+      const nextMatch = matchMap.get(String(nextId));
+      if (!nextMatch) return 0;
+      return 1 + calculateDepth(nextMatch);
+    };
+
+    const groups: { [key: number]: any[] } = {};
+    knockoutMatches.forEach((m: any) => {
+      const depth = calculateDepth(m);
+      if (!groups[depth]) groups[depth] = [];
+      groups[depth].push(m);
+    });
+
+    return Object.keys(groups).map(Number).sort((a: any, b: any) => b - a).map((depth: any) => ({
+      name: depth === 0 ? "Chung Kết" : depth === 1 ? "Bán Kết" : `Vòng ${depth + 1}`,
+      matches: groups[depth].sort((a: any, b: any) => getPosition(a) - getPosition(b))
+    }));
+  }, [knockoutMatches]);
+
+  // --- XỬ LÝ BỐC THĂM ---
+  const handleConfirmGenerate = async () => {
     let rawInputs: any[] = [];
-    (selectedClubIds as any[]).forEach(val => {
+    (selectedClubIds as any[]).forEach((val: any) => {
       if (typeof val === 'string') {
-        // Tách chuỗi bằng khoảng trắng hoặc dấu phẩy
-        const parts = val.split(/[\s,]+/).filter(p => p.trim() !== '');
+        const parts = val.split(/[\s,]+/).filter((p: any) => p.trim() !== '');
         rawInputs.push(...parts);
       } else {
         rawInputs.push(val);
       }
     });
 
-    // ✨ Bước 2: Ánh xạ từ Input sang ID thật
-    const finalIds = rawInputs.map(val => {
-      // Nếu là số hoặc chuỗi có thể chuyển thành số (ID nhập trực tiếp)
+    const finalIds = rawInputs.map((val: any) => {
       if (!isNaN(Number(val))) return Number(val);
-      
-      // Nếu là tên đội bóng, tìm ID tương ứng trong danh sách clubs
       const found = (clubs as any[] || []).find((c: any) => 
         String(c?.name || '').toLowerCase() === String(val).toLowerCase()
       );
       return found ? found.id : null;
-    }).filter(id => id !== null) as number[];
+    }).filter((id: any) => id !== null) as number[];
 
-    // Kiểm tra lại số lượng sau khi đã xử lý
     if (finalIds.length < 2) {
       message.warning("Vui lòng nhập hoặc chọn ít nhất 2 đội hợp lệ!");
       return;
     }
-
-    console.log("Dữ liệu gửi đi:", { qualifiedClubIds: finalIds }); // Kiểm tra log trước khi gọi API
 
     setGenerating(true);
     try {
       await tournamentApi.generateFirstKnockoutRound(tournamentId, { qualifiedClubIds: finalIds });
       message.success("Bốc thăm Vòng Knockout thành công!");
       setIsModalVisible(false);
-      onRefresh();
+      
+      // ✨ Gọi lại API để load ngay sơ đồ mới bốc thăm
+      fetchKnockoutBracket();
+      if (onRefresh) onRefresh();
     } catch (error: any) {
       message.error(error.response?.data?.message || "Có lỗi xảy ra!");
     } finally {
       setGenerating(false);
     }
   };
-  if (loading) return <div className="flex justify-center p-20"><Spin size="large" /></div>;
+
+  if (loadingBracket) return <div className="flex justify-center p-20"><Spin size="large" /></div>;
 
   return (
     <div className="p-6 bg-slate-50 min-h-[500px] rounded-b-xl border-x border-b border-slate-200 overflow-x-auto">
       
-      {/* ================= TRẠNG THÁI 1: CHƯA CÓ LỊCH KNOCKOUT ================= */}
       {knockoutMatches.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-slate-600 bg-white rounded-xl border border-dashed border-slate-300">
           <Trophy size={64} className="text-yellow-400 mb-6" />
@@ -104,65 +147,75 @@ const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, matches, loadin
           </Button>
         </div>
       ) : (
-        /* ================= TRẠNG THÁI 2: HIỂN THỊ SƠ ĐỒ BRACKET ================= */
-        <div className="min-w-[1000px]">
+        <div className="min-w-[1200px] pb-10">
           <div className="flex justify-between items-center mb-10">
             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <Trophy className="text-yellow-500" /> Sơ đồ Vòng Loại Trực Tiếp
+              <Trophy className="text-yellow-500" /> Sơ đồ Nhánh Đấu Vòng Loại Trực Tiếp
             </h2>
-            <Tag color="red" className="px-3 py-1 font-bold border-0">Chế độ Knockout</Tag>
+            <Button onClick={fetchKnockoutBracket} size="small" icon={<CalendarDays size={14}/>}>Làm mới</Button>
           </div>
 
-          <div className="flex gap-12 items-center">
-            {/* CỘT VÒNG 1 (Ví dụ: Tứ Kết) */}
-            <div className="flex flex-col gap-8 w-80">
-              {knockoutMatches.map((match, idx) => (
-                <div key={idx} className="bg-white border border-slate-300 rounded-lg shadow-sm relative group hover:border-blue-400 transition-colors">
-                  {/* Đường nối sang vòng tiếp theo */}
-                  <div className="absolute top-1/2 -right-12 w-12 h-[2px] bg-slate-300 group-hover:bg-blue-300"></div>
-
-                  <div className="flex items-center justify-between p-2 bg-slate-50 border-b border-slate-200 rounded-t-lg">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Trận {idx + 1}</span>
-                    <Tag color="blue" className="m-0 border-0 text-[10px] scale-90">{match.status}</Tag>
-                  </div>
-                  
-                  {/* Đội nhà */}
-                  <div className="flex items-center justify-between p-3">
-                    <div className="flex items-center gap-2 font-semibold text-slate-700">
-                      <ShieldCheck size={16} className={match.homeClub ? "text-blue-500" : "text-slate-300"} />
-                      <span className="truncate w-40">{match.homeClub?.name || "???"}</span>
-                    </div>
-                    <span className="font-mono font-bold text-slate-400">-</span>
-                  </div>
-
-                  {/* Đội khách */}
-                  <div className="flex items-center justify-between p-3 border-t border-slate-100 bg-slate-50/30">
-                    <div className="flex items-center gap-2 font-semibold text-slate-700">
-                      <ShieldCheck size={16} className={match.awayClub ? "text-red-500" : "text-slate-300"} />
-                      <span className="truncate w-40">
-                        {match.awayClub?.name || (match.status === 'FINISHED' ? "MIỄN ĐẤU" : "Đang chờ...")}
-                      </span>
-                    </div>
-                    <span className="font-mono font-bold text-slate-400">-</span>
-                  </div>
+          <div className="flex justify-start items-start gap-24 px-4">
+            {rounds.map((round: any, rIdx: any) => (
+              <div key={rIdx} className="flex flex-col justify-around gap-8 min-h-[500px]">
+                <div className="text-center">
+                  <Tag color="orange" className="uppercase font-bold tracking-widest px-4 py-1">{round.name}</Tag>
                 </div>
-              ))}
-            </div>
+                
+                <div className="flex flex-col justify-around flex-grow gap-12">
+                  {round.matches.map((match: any, mIdx: any) => (
+                    <div key={mIdx} className="relative group">
+                      {/* CARD TRẬN ĐẤU */}
+                      <div className="w-72 bg-white border-2 border-slate-200 rounded-xl shadow-sm hover:border-blue-400 transition-all z-10 relative">
+                        <div className="p-1.5 bg-slate-50 border-b flex justify-between items-center">
+                          <span className="text-[10px] font-black text-slate-400 uppercase">Match #{match.id}</span>
+                          <span className={`text-[10px] px-2 rounded-full font-bold ${match.status === 'FINALIZED' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
+                            {match.status}
+                          </span>
+                        </div>
 
-            {/* CỘT VÒNG 2 (Placeholder Bán Kết) */}
-            <div className="flex flex-col gap-24 w-80">
-               {[1, 2].map((_, i) => (
-                  <div key={i} className="bg-slate-100/50 border border-dashed border-slate-300 h-28 rounded-lg flex items-center justify-center text-slate-400 font-medium relative italic text-sm">
-                    <div className="absolute top-1/2 -left-12 w-12 h-[2px] bg-slate-300"></div>
-                    Chờ kết quả Vòng 1
-                  </div>
-               ))}
-            </div>
+                        {/* Đội Nhà */}
+                        <div className={`flex justify-between p-3 items-center ${match.winner?.id === match.homeClub?.id && match.homeClub ? 'bg-blue-50/50' : ''}`}>
+                          <div className="flex items-center gap-3">
+                            <ShieldCheck size={18} className={match.homeClub ? "text-blue-500" : "text-slate-300"} />
+                            <span className={`text-sm font-bold truncate w-40 ${!match.homeClub ? 'text-slate-300 italic' : 'text-slate-700'}`}>
+                              {match.homeClub?.name || "Chờ cặp đấu trước..."}
+                            </span>
+                          </div>
+                          <span className="text-lg font-black">{match.homeClub?.score ?? '-'}</span>
+                        </div>
+
+                        <div className="border-t border-slate-100"></div>
+
+                        {/* Đội Khách */}
+                        <div className={`flex justify-between p-3 items-center ${match.winner?.id === match.awayClub?.id && match.awayClub ? 'bg-blue-50/50' : ''}`}>
+                          <div className="flex items-center gap-3">
+                            <ShieldCheck size={18} className={match.awayClub ? "text-red-500" : "text-slate-300"} />
+                            <span className={`text-sm font-bold truncate w-40 ${!match.awayClub ? 'text-slate-300 italic' : 'text-slate-700'}`}>
+                              {match.awayClub?.name || "Đang chờ..."}
+                            </span>
+                          </div>
+                          <span className="text-lg font-black">{match.awayClub?.score ?? '-'}</span>
+                        </div>
+                      </div>
+
+                      {/* ĐƯỜNG NỐI (CONNECTORS) */}
+                      {rIdx < rounds.length - 1 && (
+                        <>
+                          <div className="absolute top-1/2 -right-12 w-12 h-0.5 bg-slate-300"></div>
+                          <div className={`absolute -right-12 w-0.5 bg-slate-300 ${mIdx % 2 === 0 ? 'top-1/2 h-full' : 'bottom-1/2 h-full'}`}></div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* ================= MODAL CẤU HÌNH BỐC THĂM ================= */}
+      {/* MODAL CẤU HÌNH BỐC THĂM (Giữ nguyên logic của bạn) */}
       <Modal
         title={<div className="flex items-center gap-2"><ListOrdered className="text-blue-600"/> Cấu hình Vòng Loại Trực Tiếp</div>}
         open={isModalVisible}
@@ -176,20 +229,10 @@ const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, matches, loadin
         centered
       >
         <div className="py-4">
-          {/* LỰA CHỌN CHẾ ĐỘ */}
           <div className="flex justify-center mb-8">
-            <Radio.Group 
-              value={selectionMode} 
-              onChange={(e) => setSelectionMode(e.target.value)}
-              buttonStyle="solid"
-              size="large"
-            >
-              <Radio.Button value="auto">
-                <span className="flex items-center gap-2 px-2"><Trophy size={16}/> Tự động (Từ BXH)</span>
-              </Radio.Button>
-              <Radio.Button value="manual">
-                <span className="flex items-center gap-2 px-2"><Swords size={16}/> Chọn thủ công</span>
-              </Radio.Button>
+            <Radio.Group value={selectionMode} onChange={(e) => setSelectionMode(e.target.value)} buttonStyle="solid" size="large">
+              <Radio.Button value="auto"><span className="flex items-center gap-2 px-2"><Trophy size={16}/> Tự động (Từ BXH)</span></Radio.Button>
+              <Radio.Button value="manual"><span className="flex items-center gap-2 px-2"><Swords size={16}/> Chọn thủ công</span></Radio.Button>
             </Radio.Group>
           </div>
 
@@ -210,23 +253,18 @@ const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, matches, loadin
                 <Button size="small" type="link" onClick={() => setSelectedClubIds([])} danger>Xóa tất cả</Button>
               </div>
 
-              {/* ✨ 1. Ô NHẬP TAY (TÌM KIẾM NHANH) */}
               <div className="mb-4">
                 <Select
-                 
                   showSearch
                   allowClear
                   style={{ width: '100%' }}
                   mode="tags"
-                  
                   placeholder="✍️ Gõ tên đội bóng để tìm và chọn nhanh..."
                   value={selectedClubIds}
                   onChange={(values) => setSelectedClubIds(values)}
-                  options={clubs?.map(c => ({
+                  options={clubs?.map((c: any) => ({
                     value: c.id,
                     label: c.name,
-                    
-                    // Lưu luôn chuỗi chữ thường để tìm kiếm không phân biệt hoa/thường
                     searchString: (c.name || '').toLowerCase() 
                   }))}
                   optionFilterProp="searchString"
@@ -235,10 +273,9 @@ const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, matches, loadin
                 />
               </div>
 
-              {/* ✨ 2. LƯỚI HIỂN THỊ TRỰC QUAN (Không bao giờ bị ẩn) */}
               {clubs && clubs.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto p-2 border border-slate-200 rounded-lg bg-slate-50">
-                  {clubs.map(club => {
+                  {clubs.map((club: any) => {
                     const sIndex = selectedClubIds.indexOf(club.id);
                     const isSelected = sIndex !== -1;
                     return (
@@ -250,15 +287,11 @@ const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, matches, loadin
                         }}
                         className={`
                           cursor-pointer p-3 rounded-lg border transition-all flex items-center gap-2 select-none text-sm
-                          ${isSelected 
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-md' 
-                            : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400'}
+                          ${isSelected ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400'}
                         `}
                       >
                         {isSelected ? (
-                          <span className="bg-white text-blue-700 rounded-full min-w-[20px] h-5 flex items-center justify-center text-[10px] font-bold px-1">
-                            {sIndex + 1}
-                          </span>
+                          <span className="bg-white text-blue-700 rounded-full min-w-[20px] h-5 flex items-center justify-center text-[10px] font-bold px-1">{sIndex + 1}</span>
                         ) : (
                           <ShieldCheck size={14} className="text-slate-300" />
                         )}
@@ -274,7 +307,6 @@ const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, matches, loadin
                 </div>
               )}
 
-              {/* THANH THÔNG BÁO TRẠNG THÁI */}
               {selectedClubIds.length > 0 && (
                 <div className="mt-4 flex items-center gap-2 text-blue-700 bg-blue-50 p-3 rounded-lg border border-blue-100">
                   <ShieldCheck size={18} />
@@ -285,7 +317,6 @@ const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, matches, loadin
           )}
         </div>
       </Modal>
-      
     </div>
   );
 };

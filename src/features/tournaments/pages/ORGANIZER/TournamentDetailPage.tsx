@@ -2,7 +2,7 @@
 import { Card, Descriptions, Tag, Spin, Divider, List, Typography, Button, Space } from 'antd';
 import { useTournamentDetail } from '../../hooks/useTournamentDetail';
 import { CalendarOutlined, EnvironmentOutlined, TrophyOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate ,useParams} from 'react-router-dom';
 
 const { Title } = Typography;
 
@@ -10,7 +10,8 @@ const { Title } = Typography;
 
 const TournamentDetailPage = () => {
   const navigate = useNavigate();
-  const { data: tournament, loading } = useTournamentDetail();
+  const { id } = useParams<{ id: string }>();
+ const { detail: tournament, loading } = useTournamentDetail(id);
 
   if (loading) return <div className="flex justify-center p-10"><Spin size="large" /></div>;
   if (!tournament) return <div className="p-10 text-center">Không tìm thấy dữ liệu.</div>;
