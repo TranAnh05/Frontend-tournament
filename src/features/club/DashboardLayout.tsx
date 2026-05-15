@@ -8,7 +8,6 @@ const NAV_ITEMS: Record<string, { label: string; icon: string; path: string }[]>
     { label: 'Thành viên', icon: '👥', path: '/club/members' },
     { label: 'Lịch thi đấu', icon: '📅', path: '/club/matches' },
     { label: 'Giải đấu', icon: '🏆', path: '/club/tournaments' },
-    { label: 'Chốt danh sách', icon: '📋', path: '/club/roster' },
   ],
   ROLE_ADMIN: [{ label: 'Tổng quan', icon: '📊', path: '/admin' }],
   ROLE_ORGANIZER: [{ label: 'Tổng quan', icon: '📊', path: '/organizer' }],
@@ -42,53 +41,48 @@ export default function DashboardLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50">
 
-         {toast && (
+      {toast && (
         <div
           onClick={clearToast}
-          className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-xl shadow-lg text-white text-sm font-semibold cursor-pointer transition-all ${
+          className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl cursor-pointer select-none ${
             toast.type === "error" ? "bg-red-500" :
             toast.type === "info"  ? "bg-blue-500" :
-            "bg-green-600"
+            "bg-blue-600"
           }`}
+          style={{ minWidth: 280, maxWidth: 420 }}
         >
-          {toast.type === "success" ? "✅" : toast.type === "error" ? "❌" : "ℹ️"} {toast.message}
+          <span className="text-2xl flex-shrink-0">
+            {toast.type === "success" ? "✅" : toast.type === "error" ? "❌" : "ℹ️"}
+          </span>
+          <span className="text-white text-[15px] font-bold leading-snug flex-1">
+            {toast.message}
+          </span>
+          <span className="text-white/70 text-lg ml-2">×</span>
         </div>
       )}
 
       {/* Sidebar */}
-      <aside className="fixed top-0 left-0 bottom-0 w-60 bg-white border-r border-gray-200 flex flex-col z-10">
+      <aside className="fixed top-0 left-0 bottom-0 w-64 bg-gray-900 text-white flex flex-col z-10 shadow-xl">
 
         {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-200">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-green-700 to-green-900 flex items-center justify-center text-lg flex-shrink-0">
-            ⚽
-          </div>
-          <div>
-            <div className="text-sm font-extrabold text-gray-900 leading-tight">Tournament</div>
-            <div className="text-xs text-gray-400">Management</div>
-
-            {userRole === 'ROLE_CLUB_MANAGER' && user?.fullName && (
-              <div className="text-xs text-green-700 font-semibold mt-0.5 truncate max-w-[120px]">
-                👤 {user.fullName}
-              </div>
-            )}
-          </div>
+        <div className="p-6 border-b border-gray-800">
+          <h1 className="text-xl font-bold tracking-wider text-blue-400">CLUB HUB</h1>
+          {userRole === 'ROLE_CLUB_MANAGER' && user?.fullName && (
+            <p className="text-xs text-gray-400 mt-1 truncate">👤 {user.fullName}</p>
+          )}
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 overflow-y-auto px-3 py-3">
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2 pb-2">
-            Menu
-          </div>
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {navItems.map(item => (
             <NavLink
               key={item.path}
               to={item.path}
               end
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg mb-0.5 text-sm font-medium transition-all ${isActive
-                  ? 'bg-green-50 text-green-700 font-bold'
-                  : 'text-gray-700 hover:bg-gray-100'
+                `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium ${isActive
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
+                  : 'text-gray-400 hover:bg-gray-800 hover:text-gray-100'
                 }`
               }
             >
@@ -99,19 +93,19 @@ export default function DashboardLayout() {
         </nav>
 
         {/* User + Logout */}
-        <div className="px-4 py-3 border-t border-gray-200">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-green-700 to-green-900 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+        <div className="p-4 border-t border-gray-800 bg-gray-900/50">
+          <div className="flex items-center gap-3 mb-4 px-2">
+            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 border border-blue-500">
               {initial}
             </div>
-            <div className="min-w-0">
-              <div className="text-xs font-bold text-gray-900 truncate">{user?.fullName}</div>
-              <div className="text-xs text-gray-400">{roleLabel}</div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-bold text-gray-100 truncate">{user?.fullName}</div>
+              <div className="text-xs text-gray-400 truncate">{roleLabel}</div>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-500 text-xs font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-gray-700 bg-transparent text-gray-300 text-xs font-semibold hover:bg-gray-800 hover:text-white transition-colors cursor-pointer"
           >
             🚪 Đăng xuất
           </button>
@@ -119,18 +113,20 @@ export default function DashboardLayout() {
       </aside>
 
       {/* Main content */}
-      <main className="ml-60 flex-1 flex flex-col min-h-screen">
+      <main className="ml-64 flex-1 flex flex-col min-h-screen">
 
         {/* Topbar */}
-        <header className="sticky top-0 h-14 bg-white border-b border-gray-200 flex items-center px-6 z-10">
+        <header className="sticky top-0 h-14 bg-white border-b border-gray-200 flex items-center px-6 z-10 shadow-sm">
           <span className="text-sm text-gray-500">
             Xin chào, <strong className="text-gray-900">{user?.fullName}</strong> 👋
           </span>
         </header>
 
         {/* Page content */}
-        <div className="p-6 flex-1">
-          <Outlet />
+        <div className="p-8 flex-1">
+          <div className="max-w-7xl mx-auto">
+            <Outlet />
+          </div>
         </div>
       </main>
     </div>

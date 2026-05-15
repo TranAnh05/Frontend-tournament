@@ -19,7 +19,7 @@ export function ClubCard({ club, venue, onEdit, onViewDetail }: ClubCardProps) {
   return (
     <div
       className="rounded-2xl p-6 text-white flex items-center justify-between gap-5 flex-wrap"
-      style={{ background: "linear-gradient(135deg, #0D7A4E 0%, #0a6641 100%)" }}
+      style={{ background: "linear-gradient(135deg, #1e40af 0%, #1D4ED8 100%)" }}
     >
       {/* Left: logo + info — clickable để xem chi tiết */}
       <div

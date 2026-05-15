@@ -15,7 +15,6 @@ import MatchesPage from "@/features/club/pages/Matchespage ";
 import TournamentsPage from "@/features/club/pages/Tournamentspage";
 import OrganizersManagementPage from "@/features/admin/pages/OrganizersManagementPage";
 import AdminDashboardPage from "@/features/admin/pages/AdminDashboardPage";
-import RosterPage from "@/features/club/pages/RosterPage";
 import RefereeAssignedMatchesPage from "@/features/referee/pages/RefereeAssignedMatchesPage";
 import RefereeMatchActionPage from "@/features/referee/pages/RefereeMatchActionPage";
 import MainLayout from "../features/tournaments/pages/ORGANIZER/MainLayout";
@@ -142,7 +141,6 @@ export const router = createBrowserRouter([
                     { path: "/club/members", element: <MembersPage /> },
                     { path: "/club/matches", element: <MatchesPage /> },
                     { path: "/club/tournaments", element: <TournamentsPage /> },
-                    { path: "/club/roster", element: <RosterPage /> },
                 ],
             },
         ],

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMembers } from "../hooks/useMembers";
 import { Card, CardHeader, Th, Td, Modal, Field, Input, Btn } from "../components/common/UIComponents";
 import type { UpdateAthleteRequest } from "../api/athleteApi";
+import { useUiStore } from "../store/uiStore";
 
 type Tab = "APPROVED" | "PENDING";
 
@@ -11,6 +12,8 @@ const HEALTH_OPTIONS = ["FIT", "INJURED"] as const;
 export default function MembersPage() {
   const [tab, setTab] = useState<Tab>("APPROVED");
   const { members, loading, approve, reject, updateAthlete, remove, assignRole } = useMembers(tab);
+  const showToast = useUiStore(s => s.showToast);
+  const [confirmDelete, setConfirmDelete] = useState<{ memberId: number; name: string } | null>(null);
 
   const [editModal, setEditModal] = useState(false);
   const [rejectModal, setRejectModal] = useState(false);
@@ -54,7 +57,7 @@ export default function MembersPage() {
             className={`px-4 py-1.5 rounded-lg border-none cursor-pointer text-[13px] font-semibold transition-all ${
               tab === t ? "bg-white shadow-sm" : "bg-transparent text-gray-500"
             }`}
-            style={tab === t ? { color: "#0D7A4E" } : undefined}
+            style={tab === t ? { color: "#2563EB" } : undefined}
           >
             {t === "APPROVED" ? "✅ Thành viên" : "⏳ Chờ duyệt"}
           </button>
@@ -122,7 +125,7 @@ export default function MembersPage() {
                 )}
                 {tab === "PENDING" && (
                   <Td>
-                    <span className="font-extrabold text-[15px]" style={{ color: "#0D7A4E" }}>
+                    <span className="font-extrabold text-[15px]" style={{ color: "#2563EB" }}>
                       {m.preferredNumber ? `#${m.preferredNumber}` : "—"}
                     </span>
                   </Td>
@@ -136,7 +139,7 @@ export default function MembersPage() {
                 {/* --- Tab APPROVED --- */}
                 {tab === "APPROVED" && (
                   <Td>
-                    <span className="font-extrabold text-[15px]" style={{ color: "#0D7A4E" }}>
+                    <span className="font-extrabold text-[15px]" style={{ color: "#2563EB" }}>
                       #{m.preferredNumber ?? "—"}
                     </span>
                   </Td>
@@ -151,7 +154,7 @@ export default function MembersPage() {
                       onChange={async (e) =>
                         await assignRole(m.memberId, e.target.value as "MEMBER" | "CAPTAIN" | "HEAD_COACH")
                       }
-                      className="border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-900 cursor-pointer focus:outline-none focus:ring-1 focus:ring-green-500"
+                      className="border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-900 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
                     >
                       {ROLE_OPTIONS.map((r) => (
                         <option key={r} value={r}>{r}</option>
@@ -163,7 +166,7 @@ export default function MembersPage() {
                   <Td>
                     <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
                       m.healthStatus === "FIT"
-                        ? "bg-emerald-50 text-emerald-700"
+                        ? "bg-blue-50 text-blue-700"
                         : "bg-red-50 text-red-500"
                     }`}>
                       {m.healthStatus === "FIT" ? "Khỏe mạnh" : "Chấn thương"}
@@ -194,9 +197,7 @@ export default function MembersPage() {
                           ✏️ Sửa
                         </Btn>
                         <Btn size="sm" variant="danger"
-                          onClick={async () => {
-                            if (confirm(`Xóa ${m.fullName} khỏi CLB?`)) await remove(m.memberId);
-                          }}>
+                          onClick={() => setConfirmDelete({ memberId: m.memberId, name: m.fullName })}>
                           🗑
                         </Btn>
                       </>
@@ -222,7 +223,7 @@ export default function MembersPage() {
           <div className="flex gap-2 justify-end mt-2">
             <Btn onClick={() => setRejectModal(false)}>Hủy</Btn>
             <Btn variant="danger" onClick={async () => {
-              if (!rejectReason.trim()) return alert("Vui lòng nhập lý do!");
+              if (!rejectReason.trim()) return showToast("Vui lòng nhập lý do!", "error");
               await reject(selected, rejectReason);
               setRejectModal(false);
             }}>
@@ -254,7 +255,7 @@ export default function MembersPage() {
             <select
               value={editForm.healthStatus ?? "FIT"}
               onChange={(e) => setEditForm({ ...editForm, healthStatus: e.target.value as "FIT" | "INJURED" })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {HEALTH_OPTIONS.map((h) => (
                 <option key={h} value={h}>{h === "FIT" ? "Khỏe mạnh" : "Chấn thương"}</option>
@@ -268,6 +269,25 @@ export default function MembersPage() {
               setEditModal(false);
             }}>
               💾 Lưu
+            </Btn>
+          </div>
+        </Modal>
+      )}
+      {/* Modal xác nhận xóa */}
+      {confirmDelete && (
+        <Modal title="Xác nhận xóa thành viên" onClose={() => setConfirmDelete(null)}>
+          <p className="text-sm text-gray-600 mb-4">
+            Bạn có chắc muốn xóa <b className="text-gray-900">{confirmDelete.name}</b> khỏi CLB?
+            <br /><span className="text-red-500 text-xs">Hành động này không thể hoàn tác.</span>
+          </p>
+          <div className="flex gap-2 justify-end">
+            <Btn onClick={() => setConfirmDelete(null)}>Hủy</Btn>
+            <Btn variant="danger" onClick={async () => {
+              await remove(confirmDelete.memberId);
+              setConfirmDelete(null);
+              showToast(`Đã xóa ${confirmDelete.name} khỏi CLB`, "success");
+            }}>
+              🗑 Xác nhận xóa
             </Btn>
           </div>
         </Modal>

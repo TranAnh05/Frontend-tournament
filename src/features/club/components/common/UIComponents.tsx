@@ -10,7 +10,7 @@ interface StatCardProps {
 export function StatCard({ label, value, icon }: StatCardProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3">
-      <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center text-xl flex-shrink-0">
+      <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-xl flex-shrink-0">
         {icon}
       </div>
       <div>
@@ -131,7 +131,7 @@ export function Input({ value, onChange, placeholder, type = "text" }: InputProp
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[13px] outline-none text-gray-900 box-border focus:ring-2 focus:ring-green-500 focus:border-transparent"
+      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[13px] outline-none text-gray-900 box-border focus:ring-2 focus:ring-blue-500 focus:border-transparent"
     />
   );
 }
@@ -152,7 +152,7 @@ export function Btn({ children, onClick, variant = "outline", size = "md", disab
 
   const variantClass =
     variant === "primary"
-      ? "bg-[#0D7A4E] text-white border-transparent hover:bg-[#0a6641]"
+      ? "bg-blue-600 text-white border-transparent hover:bg-blue-700"
       : variant === "danger"
       ? "bg-red-50 text-red-500 border border-red-200 hover:bg-red-100"
       : "bg-white text-gray-900 border border-gray-200 hover:bg-gray-50";
@@ -194,20 +194,20 @@ export function Avatar({ name, size = 36 }: { name: string; size?: number }) {
 
 // ── Badge 
 const STATUS_CFG: Record<string, { bg: string; color: string; label: string }> = {
-  ACTIVE:            { bg: '#E8F8F2', color: '#0F6E56', label: 'Hoạt động' },
-  APPROVED:          { bg: '#E8F8F2', color: '#0F6E56', label: 'Đã duyệt' },
-  ELIGIBLE:          { bg: '#E8F8F2', color: '#0F6E56', label: 'Đủ điều kiện' },
-  ONGOING:           { bg: '#E3F2FD', color: '#1565C0', label: 'Đang diễn ra' },
+  ACTIVE:            { bg: '#EFF6FF', color: '#1D4ED8', label: 'Hoạt động' },
+  APPROVED:          { bg: '#EFF6FF', color: '#1D4ED8', label: 'Đã duyệt' },
+  ELIGIBLE:          { bg: '#EFF6FF', color: '#1D4ED8', label: 'Đủ điều kiện' },
+  ONGOING:           { bg: '#EFF6FF', color: '#1D4ED8', label: 'Đang diễn ra' },
   SCHEDULED:         { bg: '#FFF8E1', color: '#854F0B', label: 'Sắp diễn ra' },
   PENDING:           { bg: '#FFF8E1', color: '#854F0B', label: 'Chờ duyệt' },
-  REGISTRATION_OPEN: { bg: '#E8F8F2', color: '#0F6E56', label: 'Mở đăng ký' },
+  REGISTRATION_OPEN: { bg: '#EFF6FF', color: '#1D4ED8', label: 'Mở đăng ký' },
   FINISHED:          { bg: '#F1F3F5', color: '#4B5563', label: 'Kết thúc' },
   SUSPENDED:         { bg: '#FFEBEE', color: '#C62828', label: 'Treo giò' },
   WITHDRAWN:         { bg: '#F1F3F5', color: '#4B5563', label: 'Đã rút lui' },
   REJECTED:          { bg: '#FFEBEE', color: '#C62828', label: 'Từ chối' },
   REMOVED:           { bg: '#FFEBEE', color: '#C62828', label: 'Đã xóa' },
   LEFT:              { bg: '#F1F3F5', color: '#4B5563', label: 'Đã rời' },
-  FIT:               { bg: '#E8F8F2', color: '#0F6E56', label: 'Khỏe mạnh' },
+  FIT:               { bg: '#EFF6FF', color: '#1D4ED8', label: 'Khỏe mạnh' },
   INJURED:           { bg: '#FFEBEE', color: '#C62828', label: 'Chấn thương' },
   DRAFT:             { bg: '#F1F3F5', color: '#4B5563', label: 'Nháp' },
 };
@@ -245,7 +245,7 @@ export function Select({
     <select
       value={value}
       onChange={e => onChange(e.target.value)}
-      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[13px] text-gray-900 bg-gray-50 box-border font-[inherit] focus:outline-none focus:ring-2 focus:ring-green-500"
+      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[13px] text-gray-900 bg-gray-50 box-border font-[inherit] focus:outline-none focus:ring-2 focus:ring-blue-500"
     >
       {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
     </select>

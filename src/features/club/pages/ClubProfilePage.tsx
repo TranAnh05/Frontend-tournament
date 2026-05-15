@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useClub } from "../hooks/useClub";
 import { ClubCard } from "../components/club/ClubCard";
 import { StatCard, Card, CardHeader, Th, Td, Modal, Field, Input, Btn } from "../components/common/UIComponents";
+import { useUiStore } from "../store/uiStore";
 
 import { matchApi } from "../api/matchApi";
 import { statsApi } from "../api/statsApi";
@@ -16,12 +17,12 @@ type DetailModal = "matches" | "tournaments" | "disciplines" | "clubDetail" | nu
 const MATCH_STATUS_LABEL: Record<string, { label: string; color: string; bg: string }> = {
   SCHEDULED: { label: "Sắp diễn ra", color: "#1565C0", bg: "#E3F2FD" },
   IN_PROGRESS: { label: "Đang diễn ra", color: "#E65100", bg: "#FFF3E0" },
-  FINISHED: { label: "Kết thúc", color: "#0F6E56", bg: "#ECFDF5" },
+  FINISHED: { label: "Kết thúc", color: "#1D4ED8", bg: "#EFF6FF" },
   CANCELED: { label: "Hủy", color: "#EF4444", bg: "#FFEBEE" },
 };
 
 const REG_STATUS: Record<string, { label: string; color: string; bg: string }> = {
-  APPROVED: { label: "Đã duyệt", color: "#0F6E56", bg: "#ECFDF5" },
+  APPROVED: { label: "Đã duyệt", color: "#1D4ED8", bg: "#EFF6FF" },
   PENDING: { label: "Chờ duyệt", color: "#854F0B", bg: "#FFF8E1" },
   REJECTED: { label: "Từ chối", color: "#EF4444", bg: "#FFEBEE" },
   WITHDRAWN: { label: "Đã rút", color: "#6B7280", bg: "#F3F4F6" },
@@ -37,6 +38,7 @@ const DISC_TYPE: Record<string, { label: string; color: string; bg: string }> = 
 
 export default function ClubProfilePage() {
   const { club, loading, notFound, createClub, updateClub } = useClub();
+  const showToast = useUiStore(s => s.showToast);
   const [editModal, setEditModal] = useState(false);
   const [detailModal, setDetailModal] = useState<DetailModal>(null);
   const [form, setForm] = useState<UpdateClubRequest>({
@@ -71,7 +73,7 @@ export default function ClubProfilePage() {
         <div className="w-full max-w-[540px]">
           <div
             className="rounded-2xl p-7 text-white mb-5 text-center"
-            style={{ background: "linear-gradient(135deg, #0D7A4E 0%, #0a6641 100%)" }}
+            style={{ background: "linear-gradient(135deg, #1e40af 0%, #1D4ED8 100%)" }}
           >
             <div className="text-5xl mb-2.5">🏟</div>
             <div className="text-xl font-extrabold mb-1.5">Tạo hồ sơ câu lạc bộ</div>
@@ -99,14 +101,14 @@ export default function ClubProfilePage() {
                 <Input value={createForm.contactPhone ?? ""} onChange={(v) => setCreateForm({ ...createForm, contactPhone: v })} placeholder="028 xxxx xxxx" />
               </Field>
             </div>
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-3.5 py-2.5 mt-1 mb-4 text-xs text-emerald-700">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg px-3.5 py-2.5 mt-1 mb-4 text-xs text-blue-700">
               💡 Sau khi tạo, CLB sẽ chờ ban tổ chức xét duyệt trước khi đăng ký giải đấu.
             </div>
             <div className="flex justify-end">
               <Btn variant="primary" size="lg" onClick={async () => {
-                if (!createForm.name || !createForm.shortName) return alert("Vui lòng điền tên CLB và tên viết tắt!");
+                if (!createForm.name || !createForm.shortName) return showToast("Vui lòng điền tên CLB và tên viết tắt!", "error");
                 try { await createClub(createForm); }
-                catch (err: unknown) { alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Tạo CLB thất bại"); }
+                catch (err: unknown) { showToast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Tạo CLB thất bại", "error"); }
               }}>🏟 Tạo hồ sơ CLB</Btn>
             </div>
           </div>
@@ -135,8 +137,8 @@ export default function ClubProfilePage() {
 
         {/* Giải đang tham gia */}
         <button className="text-left" onClick={() => setDetailModal("tournaments")}>
-          <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 hover:border-emerald-400 hover:shadow-sm transition-all cursor-pointer">
-            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-xl flex-shrink-0">🏆</div>
+          <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer">
+            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-xl flex-shrink-0">🏆</div>
             <div>
               <div className="text-xl font-extrabold text-gray-900">{approvedRegs.length}</div>
               <div className="text-xs text-gray-500 mt-0.5">Giải đang tham gia</div>
@@ -146,8 +148,8 @@ export default function ClubProfilePage() {
 
         {/* Trận đã đấu */}
         <button className="text-left" onClick={() => setDetailModal("matches")}>
-          <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 hover:border-emerald-400 hover:shadow-sm transition-all cursor-pointer">
-            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-xl flex-shrink-0">⚽</div>
+          <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer">
+            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-xl flex-shrink-0">⚽</div>
             <div>
               <div className="text-xl font-extrabold text-gray-900">{playedMatches.length}</div>
               <div className="text-xs text-gray-500 mt-0.5">Trận đã đấu</div>
@@ -157,8 +159,8 @@ export default function ClubProfilePage() {
 
         {/* Kỷ luật */}
         <button className="text-left" onClick={() => setDetailModal("disciplines")}>
-          <div className={`bg-white border rounded-xl p-4 flex items-center gap-3 hover:shadow-sm transition-all cursor-pointer ${disciplines.length > 0 ? "border-red-300 hover:border-red-400" : "border-gray-200 hover:border-emerald-400"}`}>
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0 ${disciplines.length > 0 ? "bg-red-50" : "bg-emerald-50"}`}>🟥</div>
+          <div className={`bg-white border rounded-xl p-4 flex items-center gap-3 hover:shadow-sm transition-all cursor-pointer ${disciplines.length > 0 ? "border-red-300 hover:border-red-400" : "border-gray-200 hover:border-blue-400"}`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0 ${disciplines.length > 0 ? "bg-red-50" : "bg-blue-50"}`}>🟥</div>
             <div>
               <div className={`text-xl font-extrabold ${disciplines.length > 0 ? "text-red-500" : "text-gray-900"}`}>{disciplines.length}</div>
               <div className="text-xs text-gray-500 mt-0.5">Kỷ luật</div>
@@ -186,11 +188,11 @@ export default function ClubProfilePage() {
                 <Td><span className="font-semibold">{m.fullName}</span></Td>
                 <Td className="font-mono text-gray-500">{m.identityNumber}</Td>
                 <Td>{m.dateOfBirth ? new Date(m.dateOfBirth).toLocaleDateString("vi-VN") : "—"}</Td>
-                <Td><span className="font-extrabold" style={{ color: "#0D7A4E" }}>#{m.preferredNumber}</span></Td>
+                <Td><span className="font-extrabold" style={{ color: "#2563EB" }}>#{m.preferredNumber}</span></Td>
                 <Td>{m.preferredPosition}</Td>
                 <Td><span className="bg-gray-100 text-gray-500 text-[11px] font-semibold px-2 py-0.5 rounded-md">{m.clubRole}</span></Td>
                 <Td>
-                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${m.healthStatus === "FIT" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-500"}`}>
+                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${m.healthStatus === "FIT" ? "bg-blue-50 text-blue-700" : "bg-red-50 text-red-500"}`}>
                     {m.healthStatus === "FIT" ? "Khỏe mạnh" : "Chấn thương"}
                   </span>
                 </Td>
@@ -206,7 +208,7 @@ export default function ClubProfilePage() {
           {/* Banner nhỏ */}
           <div
             className="rounded-xl p-4 text-white flex items-center gap-4 mb-5"
-            style={{ background: "linear-gradient(135deg, #0D7A4E 0%, #0a6641 100%)" }}
+            style={{ background: "linear-gradient(135deg, #1e40af 0%, #1D4ED8 100%)" }}
           >
             <div className="w-14 h-14 rounded-[12px] bg-white/15 flex items-center justify-center text-3xl flex-shrink-0">
               {club.logoUrl
@@ -273,7 +275,7 @@ export default function ClubProfilePage() {
             <Btn onClick={() => setEditModal(false)} variant="outline">Hủy</Btn>
             <Btn variant="primary" onClick={async () => {
               try { await updateClub(form); setEditModal(false); }
-              catch (err: unknown) { alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Cập nhật thất bại"); }
+              catch (err: unknown) { showToast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Cập nhật thất bại", "error"); }
             }}>💾 Lưu thay đổi</Btn>
           </div>
         </Modal>
@@ -331,11 +333,11 @@ export default function ClubProfilePage() {
               {r.matchesPlayed > 0 && (
                 <div className="flex gap-3 text-xs mt-2 text-gray-600">
                   <span>🎮 <b>{r.matchesPlayed}</b> trận</span>
-                  <span>✅ <b className="text-emerald-600">{r.matchesWon}</b> thắng</span>
+                  <span>✅ <b className="text-blue-600">{r.matchesWon}</b> thắng</span>
                   <span>🤝 <b>{r.matchesDrawn}</b> hòa</span>
                   <span>❌ <b className="text-red-500">{r.matchesLost}</b> thua</span>
                   <span>🏅 <b>{r.totalPoints}</b> điểm</span>
-                  {r.ranking && <span>📊 Hạng <b className="text-emerald-600">#{r.ranking}</b></span>}
+                  {r.ranking && <span>📊 Hạng <b className="text-blue-600">#{r.ranking}</b></span>}
                 </div>
               )}
             </div>
