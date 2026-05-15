@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, Calendar, Users, ChevronRight, Search, Filter, 
-  Download, User, Mail, Phone, CheckCircle, XCircle, Eye, FileText
+  Download, User, Mail, Phone, CheckCircle, XCircle, Eye, FileText,Lock
 } from 'lucide-react';
 import { Button, Input, Tag, Spin, message, Modal, Table } from 'antd';
-import { registrationApi } from '../../api/tournamentApi'; // Import API
+import { registrationApi ,tournamentApi } from '../../api/tournamentApi'; // Import API
+
 
 const RegistrationPage = () => {
   const { TextArea } = Input;
@@ -21,6 +22,35 @@ const RegistrationPage = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [detailData, setDetailData] = useState<any>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [togglingReg, setTogglingReg] = useState(false);
+
+  const handleCloseRegistration = () => {
+    Modal.confirm({
+      title: 'Xác nhận đóng cổng đăng ký',
+      content: 'Sau khi đóng, các Câu lạc bộ sẽ không thể nộp đơn tham gia giải đấu này nữa. Bạn có chắc chắn?',
+      okText: 'Đóng đăng ký',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      centered: true,
+      onOk: async () => {
+        if (!selectedTourId) return;
+        setTogglingReg(true);
+        try {
+          // Gọi API (import từ tournamentApi nhé)
+         await tournamentApi.toggleRegistration(selectedTourId);
+          message.success("Đã đóng cổng đăng ký thành công!");
+          
+          // Xóa giải đấu khỏi danh sách bên trái và reset màn hình
+          setTournaments(prev => prev.filter(t => t.id !== selectedTourId));
+          setSelectedTourId(null);
+        } catch (error: any) {
+          message.error(error.response?.data?.message || "Lỗi khi đóng đăng ký!");
+        } finally {
+          setTogglingReg(false);
+        }
+      }
+    });
+  };
 
 // --- EFFECT 1: Load danh sách giải đấu đang mở đăng ký ---
   const handleOpenDetail = async (regId: number) => {
@@ -225,6 +255,19 @@ useEffect(() => {
             >
               {/* Header Thống kê - Bạn có thể tính toán logic từ mảng 'registrations' */}
               <div className="bg-gradient-to-r from-blue-700 to-blue-500 rounded-2xl p-6 text-white mb-6 shadow-lg">
+                <div className="flex justify-between items-start mb-6">
+                  <h2 className="text-2xl font-bold">{selectedTournament.name}</h2>
+                  <Button 
+                    danger 
+                    type="primary"
+                    loading={togglingReg}
+                    onClick={handleCloseRegistration}
+                    icon={<Lock size={16} />}
+                    className="bg-red-500 hover:bg-red-600 border-none font-bold shadow-md flex items-center gap-2"
+                  >
+                    Đóng đăng ký
+                  </Button>
+                </div>
                 <h2 className="text-2xl font-bold mb-6">{selectedTournament.name}</h2>
                 <div className="grid grid-cols-4 gap-4">
                   <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm border border-white/20">

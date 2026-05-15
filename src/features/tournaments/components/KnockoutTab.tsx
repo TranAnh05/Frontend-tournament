@@ -27,6 +27,26 @@ const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, clubs, onRefres
   const [scoreForm] = Form.useForm();
 
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const handleFinishTournament = () => {
+    Modal.confirm({
+      title: 'Xác nhận kết thúc giải đấu',
+      content: 'Thao tác này sẽ chuyển giải đấu sang trạng thái ĐÃ KẾT THÚC. Bạn không thể thay đổi tỷ số hay sơ đồ được nữa. Bạn có chắc chắn?',
+      okText: 'Kết thúc giải',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      centered: true,
+      onOk: async () => {
+        try {
+          // Gọi API kết thúc giải
+          await tournamentApi.finishTournament(tournamentId);
+          message.success("Giải đấu đã chính thức kết thúc!");
+          if (onRefresh) onRefresh(); // Báo cho Component cha load lại data
+        } catch (error: any) {
+          message.error(error.response?.data?.message || "Lỗi khi kết thúc giải đấu!");
+        }
+      }
+    });
+  };
 
   // ✨ HÀM GỌI API ĐỘC LẬP CHO TAB
   const fetchKnockoutBracket = async () => {
@@ -317,6 +337,15 @@ const handleFinalizeMatch = async () => {
             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
               <Trophy className="text-yellow-500" /> Sơ đồ Nhánh Đấu Vòng Loại Trực Tiếp
             </h2>
+            <Button 
+                type={tournamentResults ? "primary" : "default"}
+                danger={!!tournamentResults}
+                onClick={handleFinishTournament}
+                className={`flex items-center gap-2 ${tournamentResults ? 'animate-pulse shadow-md shadow-red-200' : ''}`}
+                size="small" 
+              >
+                <CheckCircle size={14}/> Kết thúc giải
+              </Button>
             <div className="flex items-center gap-3">
               {!isFullScreen && (
                 <Button 
