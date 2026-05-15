@@ -147,10 +147,7 @@ const GroupsAndSchedulePage = () => {
                     <span className="font-medium text-slate-700">{tour.approvedClubs?.length || 0} đội</span>
                   </p>
                 </div>
-                <div className="flex gap-2 text-xs">
-                  <span className="bg-slate-100 text-slate-500 px-2 py-1 rounded flex items-center gap-1">Chưa bốc thăm</span>
-                  <span className="bg-slate-100 text-slate-500 px-2 py-1 rounded flex items-center gap-1">Chưa phân TT</span>
-                </div>
+               
               </div>
             ))
           )}
