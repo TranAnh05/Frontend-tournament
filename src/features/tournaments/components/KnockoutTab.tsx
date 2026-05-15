@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Button, Spin, message, Tag, Modal, Radio, Select,Form,InputNumber } from 'antd';
-import { Trophy, Swords, ShieldCheck, ListOrdered, CalendarDays,CheckCircle } from 'lucide-react';
+import { Trophy, Swords, ShieldCheck, ListOrdered, CalendarDays,CheckCircle,Minimize,Maximize } from 'lucide-react';
 import { tournamentApi } from '../api/tournamentApi';
 
 interface KnockoutTabProps {
@@ -25,6 +25,8 @@ const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, clubs, onRefres
   const [updatingScore, setUpdatingScore] = useState(false);
   
   const [scoreForm] = Form.useForm();
+
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   // ✨ HÀM GỌI API ĐỘC LẬP CHO TAB
   const fetchKnockoutBracket = async () => {
@@ -236,8 +238,25 @@ const handleFinalizeMatch = async () => {
   if (loadingBracket) return <div className="flex justify-center p-20"><Spin size="large" /></div>;
 
   return (
-    <div className="p-6 bg-slate-50 min-h-[500px] rounded-b-xl border-x border-b border-slate-200 overflow-x-auto">
-      
+   <div 
+      className={
+        isFullScreen 
+          ? "fixed inset-0 z-[9999] bg-slate-50 p-8 overflow-auto transition-all duration-300" // ✨ Chế độ toàn màn hình (Đè lên tất cả)
+          : "p-6 bg-slate-50 min-h-[500px] rounded-b-xl border-x border-b border-slate-200 overflow-x-auto" // Chế độ bình thường
+      }
+      >
+        {isFullScreen && (
+        <Button 
+          type="primary" 
+          danger 
+          icon={<Minimize size={16} />} 
+          size="large"
+          className="fixed top-6 right-6 z-[10000] shadow-xl shadow-red-500/20 rounded-full"
+          onClick={() => setIsFullScreen(false)}
+        >
+          Thoát toàn màn hình
+        </Button>
+      )}
       {knockoutMatches.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-slate-600 bg-white rounded-xl border border-dashed border-slate-300">
           <Trophy size={64} className="text-yellow-400 mb-6" />
@@ -256,6 +275,7 @@ const handleFinalizeMatch = async () => {
           </Button>
         </div>
       ) : (
+        
         <div className="min-w-[1200px] pb-10">
             {/* ✨ BẢNG VINH DANH (CHỈ HIỆN KHI TRẬN CHUNG KẾT ĐÃ CHỐT) */}
          {tournamentResults && (
@@ -297,6 +317,18 @@ const handleFinalizeMatch = async () => {
             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
               <Trophy className="text-yellow-500" /> Sơ đồ Nhánh Đấu Vòng Loại Trực Tiếp
             </h2>
+            <div className="flex items-center gap-3">
+              {!isFullScreen && (
+                <Button 
+                  onClick={() => setIsFullScreen(true)} 
+                  size="small" 
+                  icon={<Maximize size={14}/>}
+                >
+                  Toàn màn hình
+                </Button>
+              )}
+              
+            </div>
             <Button onClick={fetchKnockoutBracket} size="small" icon={<CalendarDays size={14}/>}>Làm mới</Button>
           </div>
 
