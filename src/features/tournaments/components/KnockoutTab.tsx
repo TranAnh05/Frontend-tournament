@@ -148,6 +148,22 @@ const openFinalizeModal = (match: any) => {
   setIsFinalizeModalVisible(true);
 };
 
+const tournamentResults = useMemo(() => {
+    if (knockoutMatches.length === 0) return null;
+
+    // Tìm trận Chung kết (Trận đấu không có nextMatch)
+    const finalMatch = knockoutMatches.find((m: any) => !getNextId(m));
+    
+    if (finalMatch && finalMatch.status === 'FINALIZED' && finalMatch.winner) {
+      const champion = finalMatch.winner;
+      const runnerUp = champion.id === finalMatch.homeClub?.id 
+                        ? finalMatch.awayClub 
+                        : finalMatch.homeClub;
+      return { champion, runnerUp };
+    }
+    return null;
+  }, [knockoutMatches]);
+
 // Hàm gọi API chốt sổ
 const handleFinalizeMatch = async () => {
   try {
@@ -241,6 +257,42 @@ const handleFinalizeMatch = async () => {
         </div>
       ) : (
         <div className="min-w-[1200px] pb-10">
+            {/* ✨ BẢNG VINH DANH (CHỈ HIỆN KHI TRẬN CHUNG KẾT ĐÃ CHỐT) */}
+         {tournamentResults && (
+            <div className="mb-8 bg-gradient-to-br from-yellow-50 via-amber-100 to-yellow-50 border-2 border-yellow-300 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 shadow-lg shadow-yellow-100/50 relative overflow-hidden">
+              
+              {/* Hiệu ứng trang trí ánh sáng */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[600px] h-full bg-white/40 blur-3xl rounded-full pointer-events-none"></div>
+
+              {/* KHỐI Á QUÂN */}
+              <div className="flex flex-col items-center z-10 w-full md:w-48 order-2 md:order-1 mt-4 md:mt-0">
+                 <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center border-[3px] border-slate-300 shadow-md mb-3">
+                    <Trophy size={28} className="text-slate-400" />
+                 </div>
+                 <Tag color="default" className="font-bold uppercase tracking-widest text-[10px] mb-2 border-slate-300 text-slate-500">Á Quân</Tag>
+                 <span className="text-lg font-black text-slate-700 text-center px-2 line-clamp-2 leading-tight">
+                   {tournamentResults.runnerUp?.name || 'Chưa xác định'}
+                 </span>
+              </div>
+
+              {/* KHỐI NHÀ VÔ ĐỊCH */}
+              <div className="flex flex-col items-center z-10 transform transition-transform hover:scale-105 duration-500 cursor-default order-1 md:order-2">
+                 <div className="relative">
+                    <div className="absolute inset-0 bg-yellow-400 blur-xl opacity-40 rounded-full animate-pulse"></div>
+                    <div className="w-24 h-24 bg-gradient-to-tr from-yellow-300 to-yellow-100 rounded-full flex items-center justify-center border-4 border-yellow-500 shadow-2xl relative mb-3 z-10">
+                       <Trophy size={48} className="text-yellow-600 drop-shadow-md" />
+                    </div>
+                 </div>
+                 <Tag color="gold" className="font-black uppercase tracking-widest text-[11px] mb-2 px-3 py-1 shadow-sm">Nhà Vô Địch</Tag>
+                 <span className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 to-amber-600 text-center drop-shadow-sm px-4 leading-tight">
+                    {tournamentResults.champion?.name}
+                 </span>
+              </div>
+              
+              {/* Vị trí đối xứng ảo để cân bằng UI (Ẩn trên mobile) */}
+              <div className="w-full md:w-48 order-3 hidden md:block"></div> 
+            </div>
+          )}
           <div className="flex justify-between items-center mb-10">
             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
               <Trophy className="text-yellow-500" /> Sơ đồ Nhánh Đấu Vòng Loại Trực Tiếp
