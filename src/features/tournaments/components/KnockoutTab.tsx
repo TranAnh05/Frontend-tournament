@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Button, Spin, message, Tag, Modal, Radio, Select } from 'antd';
-import { Trophy, Swords, ShieldCheck, ListOrdered, CalendarDays } from 'lucide-react';
+import { Button, Spin, message, Tag, Modal, Radio, Select,Form,InputNumber } from 'antd';
+import { Trophy, Swords, ShieldCheck, ListOrdered, CalendarDays,CheckCircle } from 'lucide-react';
 import { tournamentApi } from '../api/tournamentApi';
 
 interface KnockoutTabProps {
@@ -20,16 +20,18 @@ const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, clubs, onRefres
   const [bracketData, setBracketData] = useState<any>(null);
   const [loadingBracket, setLoadingBracket] = useState<boolean>(true);
 
+
+   const [isScoreModalVisible, setIsScoreModalVisible] = useState(false);
+  const [updatingScore, setUpdatingScore] = useState(false);
+  
+  const [scoreForm] = Form.useForm();
+
   // ✨ HÀM GỌI API ĐỘC LẬP CHO TAB
   const fetchKnockoutBracket = async () => {
     setLoadingBracket(true);
     try {
       const res = await tournamentApi.getKnockoutBracket(tournamentId);
-      
-      // ✨ FIX 1: Đồng bộ cách lấy data giống như GroupsAndSchedulePage.tsx
       const responseData = res.data ? res.data : res;
-      
-      // Lấy thẳng mảng 'result' lưu vào state
       setBracketData(responseData.result || responseData || []); 
     } catch (error) {
       console.error("Lỗi lấy sơ đồ nhánh:", error);
@@ -40,28 +42,23 @@ const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, clubs, onRefres
 
   // Tự động gọi API khi Tab được render hoặc khi tournamentId thay đổi
   useEffect(() => {
-    if (tournamentId) {
-      fetchKnockoutBracket();
-    }
+    if (tournamentId) fetchKnockoutBracket();
   }, [tournamentId]);
 
-  // --- HÀM TRÍCH XUẤT DỮ LIỆU AN TOÀN ---
+  // --- TRÍCH XUẤT VÀ PHÂN VÒNG ---
   const getNextId = (m: any) => m.nextMatchId || m.next_match_id || m.nextMatch?.id;
   const getPosition = (m: any) => m.bracketPosition ?? m.bracket_position;
 
   const knockoutMatches = useMemo(() => {
-    // ✨ FIX 2: bracketData bây giờ chắc chắn là mảng các trận đấu, không cần filter thêm
     return Array.isArray(bracketData) ? bracketData : [];
   }, [bracketData]);
 
-  // ✨ BƯỚC 2: TỰ ĐỘNG PHÂN VÒNG (WORLD CUP STYLE)
   const rounds = useMemo(() => {
     if (knockoutMatches.length === 0) return [];
 
     const matchMap = new Map();
     knockoutMatches.forEach((m: any) => matchMap.set(String(m.id), m));
 
-    // Đệ quy tính độ sâu
     const calculateDepth = (match: any): number => {
       const nextId = getNextId(match);
       if (!nextId) return 0;
@@ -82,6 +79,102 @@ const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, clubs, onRefres
       matches: groups[depth].sort((a: any, b: any) => getPosition(a) - getPosition(b))
     }));
   }, [knockoutMatches]);
+ const openScoreModal = (match: any) => {
+    // Chỉ cho phép nhập điểm nếu trận đấu đã có đủ 2 đội
+    if (!match.homeClub || !match.awayClub) {
+      message.warning("Trận đấu này chưa xác định đủ 2 đội bóng!");
+      return;
+    }
+    // Không cho sửa nếu đã FINALIZED (Tùy logic nghiệp vụ của bạn, có thể bỏ if này nếu muốn cho sửa lại)
+    if (match.status === 'FINALIZED') {
+      message.info("Trận đấu này đã kết thúc!");
+      // Vẫn cho mở nhưng có thể disable nút lưu, ở đây mình tạm thời vẫn cho mở để test
+    }
+
+    setSelectedMatch(match);
+    scoreForm.setFieldsValue({
+      homeScore: match.homeClub?.score || 0,
+      awayScore: match.awayClub?.score || 0,
+    });
+    setIsScoreModalVisible(true);
+  };
+  const handleUpdateScore = async () => {
+    try {
+      const values = await scoreForm.validateFields();
+      
+      if (values.homeScore === values.awayScore) {
+        message.error("Thể thức Loại trực tiếp không được có kết quả hòa!");
+        return;
+      }
+
+      setUpdatingScore(true);
+      // Gọi API cập nhật kết quả mà ta vừa tạo ở Backend
+      await tournamentApi.updateMatchResult(selectedMatch.id, {
+        homeScore: values.homeScore,
+        awayScore: values.awayScore
+      });
+
+      message.success("Cập nhật tỷ số thành công!");
+      setIsScoreModalVisible(false);
+      
+      // Tải lại sơ đồ để thấy đội thắng tự động được đẩy lên vòng trong!
+      fetchKnockoutBracket();
+      if (onRefresh) onRefresh();
+
+    } catch (error: any) {
+      console.error(error);
+      message.error(error.response?.data?.message || "Lỗi khi cập nhật tỷ số!");
+    } finally {
+      setUpdatingScore(false);
+    }
+  };
+  // Thêm vào trong component KnockoutTab
+const [isFinalizeModalVisible, setIsFinalizeModalVisible] = useState(false);
+const [selectedMatch, setSelectedMatch] = useState<any>(null);
+const [loadingSubmit, setLoadingSubmit] = useState(false);
+const [finalizeForm] = Form.useForm();
+
+// Hàm mở Modal dành cho BTC
+const openFinalizeModal = (match: any) => {
+  if (!match.homeClub || !match.awayClub) {
+    message.warning("Trận đấu này chưa xác định đủ 2 đối thủ!");
+    return;
+  }
+  setSelectedMatch(match);
+  finalizeForm.setFieldsValue({
+    homeScore: match.homeClub.score || 0,
+    awayScore: match.awayClub.score || 0,
+  });
+  setIsFinalizeModalVisible(true);
+};
+
+// Hàm gọi API chốt sổ
+const handleFinalizeMatch = async () => {
+  try {
+    const values = await finalizeForm.validateFields();
+    
+    // Quy tắc Knockout: Phải có đội thắng
+    if (values.homeScore === values.awayScore) {
+      message.error("Vòng loại trực tiếp không thể kết thúc với kết quả hòa! Vui lòng nhập tỷ số sau hiệp phụ hoặc penalty.");
+      return;
+    }
+
+    setLoadingSubmit(true);
+    // Gọi API PUT /api/matches/{id}/result mà chúng ta đã build ở Backend
+    await tournamentApi.updateMatchResult(selectedMatch.id, values);
+    
+    message.success(`Trận #${selectedMatch.id} đã chốt! ${values.homeScore > values.awayScore ? selectedMatch.homeClub.name : selectedMatch.awayClub.name} đã đi tiếp.`);
+    setIsFinalizeModalVisible(false);
+    
+    // Refresh lại sơ đồ để thấy "nước chảy" lên vòng trong
+    fetchKnockoutBracket(); 
+  } catch (error: any) {
+    message.error(error.response?.data?.message || "Có lỗi khi chốt kết quả");
+  } finally {
+    setLoadingSubmit(false);
+  }
+};
+  
 
   // --- XỬ LÝ BỐC THĂM ---
   const handleConfirmGenerate = async () => {
@@ -166,7 +259,11 @@ const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, clubs, onRefres
                   {round.matches.map((match: any, mIdx: any) => (
                     <div key={mIdx} className="relative group">
                       {/* CARD TRẬN ĐẤU */}
-                      <div className="w-72 bg-white border-2 border-slate-200 rounded-xl shadow-sm hover:border-blue-400 transition-all z-10 relative">
+                      <div
+                      onClick={() => openScoreModal(match)}
+                       className="w-72 bg-white border-2 border-slate-200 rounded-xl shadow-sm hover:border-blue-400 transition-all z-10 relative
+                       ${match.homeClub && match.awayClub ? 'cursor-pointer hover:border-blue-500 border-slate-200 hover:shadow-md' : 'border-slate-200 opacity-80'}"
+                       >
                         <div className="p-1.5 bg-slate-50 border-b flex justify-between items-center">
                           <span className="text-[10px] font-black text-slate-400 uppercase">Match #{match.id}</span>
                           <span className={`text-[10px] px-2 rounded-full font-bold ${match.status === 'FINALIZED' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
@@ -214,6 +311,47 @@ const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, clubs, onRefres
           </div>
         </div>
       )}
+      <Modal
+        title={<div className="flex items-center gap-2"><Trophy className="text-yellow-500"/> Cập nhật Kết Quả Trận Đấu</div>}
+        open={isScoreModalVisible}
+        onCancel={() => setIsScoreModalVisible(false)}
+        onOk={handleUpdateScore}
+        confirmLoading={updatingScore}
+        okText="Lưu kết quả & Đẩy nhánh"
+        cancelText="Hủy"
+        destroyOnHidden
+        centered
+      >
+        {selectedMatch && (
+          <div className="py-6">
+            <div className="text-center mb-6 text-slate-500 text-sm">
+              Trận đấu <Tag color="blue">#{selectedMatch.id}</Tag> vòng Knockout
+            </div>
+            
+            <Form form={scoreForm} layout="vertical" className="flex items-center justify-center gap-8">
+              {/* Cột Đội Nhà */}
+              <div className="flex flex-col items-center gap-3 w-1/3">
+                <ShieldCheck size={32} className="text-blue-500" />
+                <span className="text-center font-bold text-sm h-10">{selectedMatch.homeClub?.name}</span>
+                <Form.Item name="homeScore" rules={[{ required: true, message: 'Nhập điểm' }]} className="m-0">
+                  <InputNumber min={0} size="large" className="w-20 text-center font-bold text-xl" />
+                </Form.Item>
+              </div>
+
+              <div className="text-xl font-black text-slate-300">VS</div>
+
+              {/* Cột Đội Khách */}
+              <div className="flex flex-col items-center gap-3 w-1/3">
+                <ShieldCheck size={32} className="text-red-500" />
+                <span className="text-center font-bold text-sm h-10">{selectedMatch.awayClub?.name}</span>
+                <Form.Item name="awayScore" rules={[{ required: true, message: 'Nhập điểm' }]} className="m-0">
+                  <InputNumber min={0} size="large" className="w-20 text-center font-bold text-xl" />
+                </Form.Item>
+              </div>
+            </Form>
+          </div>
+        )}
+      </Modal>
 
       {/* MODAL CẤU HÌNH BỐC THĂM (Giữ nguyên logic của bạn) */}
       <Modal
@@ -317,6 +455,49 @@ const KnockoutTab: React.FC<KnockoutTabProps> = ({ tournamentId, clubs, onRefres
           )}
         </div>
       </Modal>
+      <Modal
+  title={<div className="flex items-center gap-2 text-red-600"><CheckCircle size={20}/> BTC Chốt kết quả trận đấu</div>}
+  open={isFinalizeModalVisible}
+  onOk={handleFinalizeMatch}
+  onCancel={() => setIsFinalizeModalVisible(false)}
+  confirmLoading={loadingSubmit}
+  okText="Xác nhận & Đẩy nhánh"
+  width={600}
+  centered
+>
+  <div className="py-8 bg-slate-50 rounded-xl px-4 border border-slate-100">
+    <Form form={finalizeForm} layout="vertical">
+      <div className="flex justify-around items-start gap-4">
+        {/* Đội Nhà */}
+        <div className="flex flex-col items-center gap-4 w-5/12">
+          <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center border-2 border-blue-100">
+             <ShieldCheck size={32} className="text-blue-500" />
+          </div>
+          <span className="font-bold text-center text-slate-700 h-12 flex items-center">{selectedMatch?.homeClub?.name}</span>
+          <Form.Item name="homeScore">
+            <InputNumber min={0} size="large" className="w-24 text-2xl font-black text-center" />
+          </Form.Item>
+        </div>
+
+        <div className="pt-20 text-2xl font-black text-slate-300">VS</div>
+
+        {/* Đội Khách */}
+        <div className="flex flex-col items-center gap-4 w-5/12">
+          <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center border-2 border-red-100">
+             <ShieldCheck size={32} className="text-red-500" />
+          </div>
+          <span className="font-bold text-center text-slate-700 h-12 flex items-center">{selectedMatch?.awayClub?.name}</span>
+          <Form.Item name="awayScore">
+            <InputNumber min={0} size="large" className="w-24 text-2xl font-black text-center" />
+          </Form.Item>
+        </div>
+      </div>
+      <div className="mt-6 p-3 bg-blue-50 rounded-lg text-blue-700 text-xs text-center italic">
+        * Sau khi nhấn xác nhận, đội thắng sẽ tự động được hệ thống đưa vào vòng đấu tiếp theo dựa trên sơ đồ nhánh.
+      </div>
+    </Form>
+  </div>
+</Modal>
     </div>
   );
 };
