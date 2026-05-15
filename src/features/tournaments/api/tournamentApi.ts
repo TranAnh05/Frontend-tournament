@@ -32,6 +32,7 @@ export const tournamentApi = {
    getReadyForGrouping: (page: number, size: number) => 
     api.get(`/tournaments/ready-for-grouping`, { params: { page, size } }),
    
+   
 // ✨ 1. Lấy danh sách các bảng đấu sau khi bốc thăm
   getGroupsByTournament: (tournamentId: number | string) => {
     // Lưu ý: Đổi `axiosClient` thành biến instance axios thực tế của bạn (ví dụ: api, axiosInstance...)
@@ -76,6 +77,9 @@ export const tournamentApi = {
   },
   getKnockoutBracket: (tournamentId: number | string) => 
     api.get(`/tournaments/${tournamentId}/knockout-bracket`),
+  updateMatchResult: (matchId: number | string, data: { homeScore: number, awayScore: number }) => 
+    api.put(`/tournaments/matches/${matchId}/result`, data),
+
 };
 export const registrationApi = {
   // Lấy danh sách giải đang mở đăng ký
