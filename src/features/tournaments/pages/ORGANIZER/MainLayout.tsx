@@ -6,6 +6,8 @@ import Header from '../../components/Header';
 const MainLayout = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false); 
+  
 
   const getPageTitle = () => {
     const path = location.pathname;
@@ -20,15 +22,21 @@ const MainLayout = () => {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden text-slate-900">
-      <Sidebar isOpen={isMobileOpen} onClose={() => setIsMobileOpen(false)} />
+      <Sidebar 
+        isOpen={isMobileOpen} 
+        onClose={() => setIsMobileOpen(false)} 
+        isCollapsed={isCollapsed} 
+      />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header
+      <Header
           title={getPageTitle()}
           onMenuClick={() => setIsMobileOpen(true)}
+          isCollapsed={isCollapsed}
+          onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
         />
         <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-7xl mx-auto">
+          <div className="w-full">
             <Outlet />
           </div>
         </main>

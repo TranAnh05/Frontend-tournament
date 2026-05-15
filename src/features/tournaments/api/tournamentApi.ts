@@ -28,7 +28,7 @@ export const tournamentApi = {
   toggleRegistration: (id: number) => api.patch(`/tournaments/${id}/registration`),
 
   startTournament: (id: number) => api.patch(`/tournaments/${id}/start`),
-  finishTournament: (id: number) => api.patch(`/tournaments/${id}/finish`),
+  finishTournament: (id: number | string) => api.patch(`/tournaments/${id}/finish`),
    getReadyForGrouping: (page: number, size: number) => 
     api.get(`/tournaments/ready-for-grouping`, { params: { page, size } }),
    
