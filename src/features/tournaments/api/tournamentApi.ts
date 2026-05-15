@@ -74,6 +74,8 @@ export const tournamentApi = {
   generateFirstKnockoutRound: (tournamentId: number | string, data: { qualifiedClubIds: number[] }) => {
     return api.post(`/tournaments/${tournamentId}/knockout/first-round`, data);
   },
+  getKnockoutBracket: (tournamentId: number | string) => 
+    api.get(`/tournaments/${tournamentId}/knockout-bracket`),
 };
 export const registrationApi = {
   // Lấy danh sách giải đang mở đăng ký

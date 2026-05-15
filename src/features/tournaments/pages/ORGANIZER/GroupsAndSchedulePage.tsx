@@ -104,11 +104,11 @@ const GroupsAndSchedulePage = () => {
       key: 'knockout',
       label: <span className="flex items-center gap-2"><Trophy size={18} /> Vòng Knockout</span>,
       children: <KnockoutTab 
-                  tournamentId={selectedTour?.id} 
-                  matches={matches} 
-                  loading={loadingMatches} 
-                  onRefresh={fetchAllMatches} 
-                  clubs={selectedTour?.approvedClubs || []}
+                  tournamentId={selectedTour?.id}
+              // Đã xóa dòng matches={matches}
+              // Đã xóa dòng loading={loadingMatches}
+              onRefresh={fetchAllMatches}
+             clubs={tourDetail?.clubs || tourDetail?.approvedClubs || selectedTour?.approvedClubs || []}
                 />,
     }
   ];
