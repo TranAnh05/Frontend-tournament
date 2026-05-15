@@ -10,6 +10,7 @@ export interface PlayerDto {
 }
 
 export interface TeamLineupDto {
+    setsWon: number;
     clubId: number;
     clubName: string;
     logoUrl: string | null;
