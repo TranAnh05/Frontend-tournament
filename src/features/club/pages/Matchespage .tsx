@@ -1,60 +1,83 @@
 import { useState } from "react";
 import { useMatches } from "../hooks/useMatches";
-import { useMembers } from "../hooks/useMembers";
 import { useUiStore } from "../store/uiStore";
-import { Card, CardHeader, Th, Td, Modal, Field, Input, Btn } from "../components/common/UIComponents";
+import { rosterApi } from "../api/rosterApi";
+import type { RosterPlayer } from "../api/rosterApi";
+import { Card, Th, Td, Modal, Input, Btn } from "../components/common/UIComponents";
 import type { MatchResponse } from "../api/matchApi";
 
 type StatusFilter = "ALL" | "SCHEDULED" | "IN_PROGRESS" | "FINISHED";
 
 const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }> = {
-  SCHEDULED: { label: "Sắp diễn ra", color: "#1565C0", bg: "#E3F2FD" },
-  IN_PROGRESS: { label: "Đang diễn ra", color: "#E65100", bg: "#FFF3E0" },
-  PAUSED: { label: "Tạm dừng", color: "#6B7280", bg: "#F3F4F6" },
-  FINISHED: { label: "Kết thúc", color: "#0F6E56", bg: "#ECFDF5" },
-  CANCELED: { label: "Hủy", color: "#EF4444", bg: "#FFEBEE" },
+  SCHEDULED:   { label: "Sắp diễn ra",   color: "#1565C0", bg: "#E3F2FD" },
+  IN_PROGRESS: { label: "Đang diễn ra",  color: "#E65100", bg: "#FFF3E0" },
+  PAUSED:      { label: "Tạm dừng",      color: "#6B7280", bg: "#F3F4F6" },
+  FINISHED:    { label: "Kết thúc",      color: "#0F6E56", bg: "#ECFDF5" },
+  CANCELED:    { label: "Hủy",           color: "#EF4444", bg: "#FFEBEE" },
 };
 
 export default function MatchesPage() {
   const { matches, loading, submitLineup } = useMatches();
-  const { members } = useMembers("APPROVED");
   const showToast = useUiStore(s => s.showToast);
 
-  const [filter, setFilter] = useState<StatusFilter>("ALL");
+  const [filter, setFilter]           = useState<StatusFilter>("ALL");
   const [detailModal, setDetailModal] = useState(false);
   const [lineupModal, setLineupModal] = useState(false);
-  const [selected, setSelected] = useState<MatchResponse | null>(null);
-  const [lineup, setLineup] = useState<Record<number, { lineupType: string; jerseyNumber: string; position: string }>>({});
+  const [selected, setSelected]       = useState<MatchResponse | null>(null);
+  const [lineup, setLineup]           = useState<Record<number, { lineupType: string; jerseyNumber: string; position: string }>>({});
+
+  // Danh sách VĐV từ roster đã chốt của giải tương ứng
+  const [rosterPlayers, setRosterPlayers] = useState<RosterPlayer[]>([]);
+  const [rosterLoading, setRosterLoading] = useState(false);
 
   const filtered = matches.filter(m => filter === "ALL" || m.status === filter);
 
   const openDetail = (m: MatchResponse) => { setSelected(m); setDetailModal(true); };
-  const openLineup = (m: MatchResponse) => {
+
+  // Khi mở modal nộp đội hình: load roster của giải đó để lấy đúng danh sách VĐV đã chốt
+  const openLineup = async (m: MatchResponse) => {
     setSelected(m);
-    const initial: typeof lineup = {};
-    members.forEach(mb => {
-      initial[mb.athleteId] = { lineupType: "SUBSTITUTE", jerseyNumber: String(mb.preferredNumber ?? ""), position: mb.preferredPosition ?? "" };
-    });
-    setLineup(initial);
+    setRosterPlayers([]);
+    setLineup({});
     setLineupModal(true);
+    setRosterLoading(true);
+    try {
+      const roster = await rosterApi.getMyRoster(m.tournamentId);
+      const initial: typeof lineup = {};
+      roster.players.forEach(p => {
+        initial[p.athleteId] = {
+          lineupType:   "STARTING",
+          jerseyNumber: String(p.jerseyNumber ?? ""),
+          position:     p.position ?? "",
+        };
+      });
+      setRosterPlayers(roster.players);
+      setLineup(initial);
+    } catch {
+      showToast("⚠️ Không tải được danh sách VĐV đã chốt. Vui lòng thử lại.", "error");
+      setLineupModal(false);
+    } finally {
+      setRosterLoading(false);
+    }
   };
 
   const handleSubmitLineup = async () => {
     if (!selected) return;
-    const payload = members
-      .filter(mb => lineup[mb.athleteId]?.lineupType !== "NONE")
-      .map(mb => ({
-        athleteId: mb.athleteId,
-        lineupType: lineup[mb.athleteId]?.lineupType ?? "SUBSTITUTE",
-        jerseyNumber: parseInt(lineup[mb.athleteId]?.jerseyNumber ?? "0") || 0,
-        position: lineup[mb.athleteId]?.position ?? "",
+    // Chỉ nộp những VĐV trong roster được chọn (không phải NONE)
+    const payload = rosterPlayers
+      .filter(p => lineup[p.athleteId]?.lineupType !== "NONE")
+      .map(p => ({
+        athleteId:    p.athleteId,
+        lineupType:   lineup[p.athleteId]?.lineupType ?? "STARTING",
+        jerseyNumber: parseInt(lineup[p.athleteId]?.jerseyNumber ?? "0") || 0,
+        position:     lineup[p.athleteId]?.position ?? "",
       }));
     try {
       await submitLineup(selected.id, payload);
-      showToast("Nộp đội hình thành công!");
+      showToast("✅ Nộp đội hình thành công!");
       setLineupModal(false);
     } catch {
-      showToast("Nộp đội hình thất bại!", "error");
+      showToast("❌ Nộp đội hình thất bại!", "error");
     }
   };
 
@@ -119,13 +142,10 @@ export default function MatchesPage() {
 
               {/* Score row */}
               <div className="flex items-center justify-between gap-3">
-                {/* Home */}
                 <div className="flex-1 text-right">
                   <div className="text-[15px] font-extrabold text-gray-900">{m.homeClubName}</div>
                   <div className="text-[11px] text-gray-500">{m.homeClubShortName}</div>
                 </div>
-
-                {/* Score */}
                 <div className="text-center min-w-[100px]">
                   {m.status === "SCHEDULED" ? (
                     <div className="text-xs text-gray-500 font-semibold">
@@ -140,8 +160,6 @@ export default function MatchesPage() {
                     </div>
                   )}
                 </div>
-
-                {/* Away */}
                 <div className="flex-1 text-left">
                   <div className="text-[15px] font-extrabold text-gray-900">{m.awayClubName}</div>
                   <div className="text-[11px] text-gray-500">{m.awayClubShortName}</div>
@@ -188,9 +206,9 @@ export default function MatchesPage() {
                   <Td className="font-bold text-[#0D7A4E]">{ev.eventTime}'</Td>
                   <Td>
                     <span className="text-xs">
-                      {ev.eventType === "GOAL" ? "⚽ Bàn thắng"
+                      {ev.eventType === "GOAL"         ? "⚽ Bàn thắng"
                         : ev.eventType === "YELLOW_CARD" ? "🟨 Thẻ vàng"
-                          : ev.eventType === "RED_CARD" ? "🟥 Thẻ đỏ"
+                          : ev.eventType === "RED_CARD"    ? "🟥 Thẻ đỏ"
                             : ev.eventType === "SUBSTITUTION" ? "🔄 Thay người"
                               : ev.eventType}
                     </span>
@@ -205,48 +223,66 @@ export default function MatchesPage() {
 
       {/* Modal nộp đội hình */}
       {lineupModal && selected && (
-        <Modal title={`Nộp đội hình: ${selected.homeClubShortName} vs ${selected.awayClubShortName}`} onClose={() => setLineupModal(false)}>
-          <div className="mb-3 text-xs text-gray-500">
-            Chọn vai trò cho từng VĐV. Chọn "Không tham gia" để loại khỏi danh sách.
-          </div>
-          <div className="max-h-[360px] overflow-y-auto">
-            {members.map(mb => (
-              <div
-                key={mb.athleteId}
-                className="grid gap-2 items-center py-2 border-b border-gray-200"
-                style={{ gridTemplateColumns: "1fr 100px 100px 100px" }}
-              >
-                <div>
-                  <div className="text-[13px] font-semibold text-gray-900">{mb.fullName}</div>
-                  <div className="text-[11px] text-gray-500">#{mb.preferredNumber}</div>
-                </div>
-                <select
-                  value={lineup[mb.athleteId]?.lineupType ?? "SUBSTITUTE"}
-                  onChange={e => setLineup(prev => ({ ...prev, [mb.athleteId]: { ...prev[mb.athleteId], lineupType: e.target.value } }))}
-                  className="border border-gray-200 rounded-md px-1.5 py-1 text-[11px] focus:outline-none"
-                >
-                  <option value="STARTING">Đá chính</option>
-                  <option value="SUBSTITUTE">Dự bị</option>
-                  <option value="NONE">Không tham gia</option>
-                </select>
-                <Input
-                  value={lineup[mb.athleteId]?.jerseyNumber ?? ""}
-                  onChange={v => setLineup(prev => ({ ...prev, [mb.athleteId]: { ...prev[mb.athleteId], jerseyNumber: v } }))}
-                  placeholder="Số áo"
-                  type="number"
-                />
-                <Input
-                  value={lineup[mb.athleteId]?.position ?? ""}
-                  onChange={v => setLineup(prev => ({ ...prev, [mb.athleteId]: { ...prev[mb.athleteId], position: v } }))}
-                  placeholder="Vị trí"
-                />
+        <Modal
+          title={`Nộp đội hình: ${selected.homeClubShortName} vs ${selected.awayClubShortName}`}
+          onClose={() => setLineupModal(false)}
+        >
+          {rosterLoading ? (
+            <div className="py-10 text-center text-gray-500">⏳ Đang tải danh sách VĐV...</div>
+          ) : rosterPlayers.length === 0 ? (
+            <div className="py-8 text-center">
+              <div className="text-3xl mb-2">⚠️</div>
+              <div className="text-sm font-semibold text-gray-700">Chưa chốt danh sách VĐV cho giải này</div>
+              <div className="text-xs text-gray-500 mt-1">
+                Vui lòng vào <b>Chốt danh sách thi đấu</b> để chốt trước khi nộp đội hình.
               </div>
-            ))}
-          </div>
-          <div className="flex gap-2 justify-end mt-4">
-            <Btn onClick={() => setLineupModal(false)}>Hủy</Btn>
-            <Btn variant="primary" onClick={handleSubmitLineup}>📝 Xác nhận nộp</Btn>
-          </div>
+            </div>
+          ) : (
+            <>
+              <div className="mb-3 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-700">
+                📋 Danh sách gồm <b>{rosterPlayers.length} VĐV</b> đã được chốt cho giải <b>{selected.tournamentName}</b>.
+                Chọn vai trò cho từng người hoặc chọn "Không tham gia" để loại khỏi trận này.
+              </div>
+              <div className="max-h-[360px] overflow-y-auto">
+                {rosterPlayers.map(p => (
+                  <div
+                    key={p.athleteId}
+                    className="grid gap-2 items-center py-2 border-b border-gray-200"
+                    style={{ gridTemplateColumns: "1fr 100px 100px 100px" }}
+                  >
+                    <div>
+                      <div className="text-[13px] font-semibold text-gray-900">{p.fullName}</div>
+                      <div className="text-[11px] text-gray-500">#{p.jerseyNumber} · {p.position || "—"}</div>
+                    </div>
+                    <select
+                      value={lineup[p.athleteId]?.lineupType ?? "STARTING"}
+                      onChange={e => setLineup(prev => ({ ...prev, [p.athleteId]: { ...prev[p.athleteId], lineupType: e.target.value } }))}
+                      className="border border-gray-200 rounded-md px-1.5 py-1 text-[11px] focus:outline-none"
+                    >
+                      <option value="STARTING">Đá chính</option>
+                      <option value="SUBSTITUTE">Dự bị</option>
+                      <option value="NONE">Không tham gia</option>
+                    </select>
+                    <Input
+                      value={lineup[p.athleteId]?.jerseyNumber ?? ""}
+                      onChange={v => setLineup(prev => ({ ...prev, [p.athleteId]: { ...prev[p.athleteId], jerseyNumber: v } }))}
+                      placeholder="Số áo"
+                      type="number"
+                    />
+                    <Input
+                      value={lineup[p.athleteId]?.position ?? ""}
+                      onChange={v => setLineup(prev => ({ ...prev, [p.athleteId]: { ...prev[p.athleteId], position: v } }))}
+                      placeholder="Vị trí"
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2 justify-end mt-4">
+                <Btn onClick={() => setLineupModal(false)}>Hủy</Btn>
+                <Btn variant="primary" onClick={handleSubmitLineup}>📝 Xác nhận nộp</Btn>
+              </div>
+            </>
+          )}
         </Modal>
       )}
     </div>
