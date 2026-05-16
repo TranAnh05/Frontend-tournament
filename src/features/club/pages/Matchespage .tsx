@@ -12,7 +12,7 @@ const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }>
   SCHEDULED:   { label: "Sắp diễn ra",   color: "#1565C0", bg: "#E3F2FD" },
   IN_PROGRESS: { label: "Đang diễn ra",  color: "#E65100", bg: "#FFF3E0" },
   PAUSED:      { label: "Tạm dừng",      color: "#6B7280", bg: "#F3F4F6" },
-  FINISHED:    { label: "Kết thúc",      color: "#0F6E56", bg: "#ECFDF5" },
+  FINISHED:    { label: "Kết thúc",      color: "#1D4ED8", bg: "#EFF6FF" },
   CANCELED:    { label: "Hủy",           color: "#EF4444", bg: "#FFEBEE" },
 };
 
@@ -63,9 +63,7 @@ export default function MatchesPage() {
 
   const handleSubmitLineup = async () => {
     if (!selected) return;
-    // Chỉ nộp những VĐV trong roster được chọn (không phải NONE)
     const payload = rosterPlayers
-      .filter(p => lineup[p.athleteId]?.lineupType !== "NONE")
       .map(p => ({
         athleteId:    p.athleteId,
         lineupType:   lineup[p.athleteId]?.lineupType ?? "STARTING",
@@ -100,7 +98,7 @@ export default function MatchesPage() {
             key={s}
             onClick={() => setFilter(s)}
             className={`px-4 py-1.5 rounded-lg border-none cursor-pointer text-xs font-semibold transition-all ${filter === s
-                ? "bg-white text-[#0D7A4E] shadow-sm"
+                ? "bg-white text-blue-600 shadow-sm"
                 : "bg-transparent text-gray-500"
               }`}
           >
@@ -174,7 +172,7 @@ export default function MatchesPage() {
                 {m.status === "SCHEDULED" && (
                   m.hasLineup ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+                      <span className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-3 py-1">
                         ✅ Đã nộp đội hình
                       </span>
                       <Btn size="sm" variant="outline" onClick={() => openLineup(m)}>✏️ Nộp lại</Btn>
@@ -203,7 +201,7 @@ export default function MatchesPage() {
             <tbody>
               {selected.events?.filter(e => !("is_deleted" in e)).map(ev => (
                 <tr key={ev.id}>
-                  <Td className="font-bold text-[#0D7A4E]">{ev.eventTime}'</Td>
+                  <Td className="font-bold text-blue-600">{ev.eventTime}'</Td>
                   <Td>
                     <span className="text-xs">
                       {ev.eventType === "GOAL"         ? "⚽ Bàn thắng"
@@ -239,9 +237,9 @@ export default function MatchesPage() {
             </div>
           ) : (
             <>
-              <div className="mb-3 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-700">
+              <div className="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
                 📋 Danh sách gồm <b>{rosterPlayers.length} VĐV</b> đã được chốt cho giải <b>{selected.tournamentName}</b>.
-                Chọn vai trò cho từng người hoặc chọn "Không tham gia" để loại khỏi trận này.
+                Chọn vai trò <b>Chính</b> hoặc <b>Dự bị</b> cho từng người.
               </div>
               <div className="max-h-[360px] overflow-y-auto">
                 {rosterPlayers.map(p => (
@@ -259,9 +257,8 @@ export default function MatchesPage() {
                       onChange={e => setLineup(prev => ({ ...prev, [p.athleteId]: { ...prev[p.athleteId], lineupType: e.target.value } }))}
                       className="border border-gray-200 rounded-md px-1.5 py-1 text-[11px] focus:outline-none"
                     >
-                      <option value="STARTING">Đá chính</option>
+                      <option value="STARTING">Chính</option>
                       <option value="SUBSTITUTE">Dự bị</option>
-                      <option value="NONE">Không tham gia</option>
                     </select>
                     <Input
                       value={lineup[p.athleteId]?.jerseyNumber ?? ""}
